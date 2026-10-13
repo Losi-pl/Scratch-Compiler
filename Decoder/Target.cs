@@ -1,0 +1,49 @@
+﻿using System.Collections.Frozen;
+using System.Collections.Immutable;
+using System.Text.Json.Nodes;
+
+namespace ScratchCompiler.Decoder;
+
+public abstract class Target
+{
+    private JsonObject JsonCode;
+    private FrozenSet<CodeBlock> _blocks = null!;
+
+    internal Target(JsonObject json)
+    {
+        JsonCode = json;
+        Name = json["name"]!.GetValue<string>();
+        DefaultCostume = (uint)(json["currentCostume"]?.GetValue<int>() ?? 0);
+        Costumes = GetCostumes(json["costumes"]!.AsArray());
+    }
+
+    public string Name { get; }
+    public FrozenSet<CodeBlock> Blocks => _blocks;
+    public ImmutableArray<Costume> Costumes { get; }
+    public readonly uint DefaultCostume;
+
+    private ImmutableArray<Costume> GetCostumes(JsonArray json)
+    {
+        List<Costume> costumes = new();
+
+        foreach (var costume in json.Cast<JsonObject>())
+        {
+            costumes.Add(new(costume));
+        }
+        
+        // ReSharper disable once UseCollectionExpression
+        return costumes.ToImmutableArray();
+    }
+    
+    internal void LoadCode()
+    {
+        var blocks = (JsonObject)JsonCode["blocks"]!;
+        HashSet<CodeBlock> codeBlocks = new();
+        foreach (var block in blocks)
+        {
+            if (block.Value?["topLevel"]?.GetValue<bool>() ?? false)
+                codeBlocks.Add(new(blocks, (JsonObject)block.Value));
+        }
+        _blocks = codeBlocks.ToFrozenSet();
+    }
+}
