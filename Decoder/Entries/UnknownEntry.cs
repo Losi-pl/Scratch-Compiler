@@ -9,6 +9,6 @@ public class UnknownEntry: CodeEntry
 
     public UnknownEntry(JsonObject block)
     {
-        _entries = block.ToFrozenDictionary(kvp => kvp.Key, kvp => kvp.Value?.DeepClone()!);
+        _entries = block.Where(kvp => kvp.Key is not ("parent" or "next" or "shadow" or "topLevel" or "x" or "y")).ToFrozenDictionary(kvp => kvp.Key, kvp => kvp.Value?.DeepClone()!);
     }
 }

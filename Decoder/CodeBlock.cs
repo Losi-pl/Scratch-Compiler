@@ -11,26 +11,17 @@ public class CodeBlock
     internal CodeBlock(JsonObject json, JsonObject entry)
     {
         var meCodeName = entry.GetPropertyName();
-        var opcode = entry["opcode"]?.GetValue<string>() ?? string.Empty;
-        if (CodeEntry.EntryCodes.Contains(opcode))
-            switch (opcode)
-            {
-                case OnStart.ScratchCode:
-                    _entry = new OnStart();
-                    break;
-                case OnSceneChangedTo.ScratchCode:
-                {
-                    var sceneName = entry["fields"]?["BACKDROP"]?[0]?.GetValue<string>() ?? string.Empty;
-                    var scene = Project._currentProject.project.Scene;
-                    _entry = new OnSceneChangedTo(scene);
-                } break;
-                default:
-                    _entry = new UnknownEntry(entry);
-                    break;
-            }
-        else
-            _entry = new Dormant();
+        _entry = CodeEntry.LoadEntry(entry);
         
         var current = entry;
+        if (_entry is Dormant)
+            current = Next(current);
+
+        // ReSharper disable once VariableHidesOuterVariable
+        JsonObject? Next(JsonObject current)
+        {
+            var nextCode = current["next"]?.GetValue<string>();
+            return nextCode is null ? null : json[nextCode]!.AsObject();
+        }
     }
 }
