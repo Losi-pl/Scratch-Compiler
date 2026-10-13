@@ -5,26 +5,35 @@ namespace ScratchCompiler.Decoder;
 
 public class Costume
 {
-    private string _name;
-    private (int x, int y) _rotationCenter;
-    private CostumeFormat _format;
-    private string _assetID;
-    private int _resolution;
-    private (ZipArchive source, string fileName) _source;
+    private readonly (ZipArchive source, string fileName) _source;
 
     internal Costume(JsonObject json)
     {
-        _name = json["name"]?.GetValue<string>() ?? string.Empty;
-        _format = json["dataFormat"]?.GetValue<string>() switch
+        Name = json["name"]?.GetValue<string>() ?? string.Empty;
+        FileFormat = json["dataFormat"]?.GetValue<string>() switch
         {
             "svg" => CostumeFormat.SVG,
             "png" => CostumeFormat.PNG,
             _ => throw new ArgumentException($"Unknown data format: {json["dataFormat"]?.GetValue<string>()}"),
         };
-        _assetID = json["assetId"]?.GetValue<string>() ?? string.Empty;
-        _resolution = json["bitmapResolution"]?.GetValue<int>() ?? 1;
+        AssetID = json["assetId"]?.GetValue<string>() ?? string.Empty;
+        Resolution = json["bitmapResolution"]?.GetValue<int>() ?? 1;
         _source = (Project._currentProject.archive, json["md5ext"]?.GetValue<string>() ?? string.Empty);
+        RotationCenter = (json["rotationCenterX"]?.GetValue<int>() ?? 0, json["rotationCenterY"]?.GetValue<int>() ?? 0);
     }
+    
+    public string Name { get; }
+
+    public (int x, int y) RotationCenter { get; }
+
+    public CostumeFormat FileFormat { get; }
+
+    // ReSharper disable once InconsistentNaming
+    public string AssetID { get; }
+
+    public int Resolution { get; }
+
+    public Stream OpenStream() => _source.source.GetEntry(_source.fileName)!.Open();
 }
 
 // ReSharper disable InconsistentNaming

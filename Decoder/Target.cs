@@ -6,12 +6,12 @@ namespace ScratchCompiler.Decoder;
 
 public abstract class Target
 {
-    private JsonObject JsonCode;
+    private JsonObject _jsonCode;
     private FrozenSet<CodeBlock> _blocks = null!;
 
     internal Target(JsonObject json)
     {
-        JsonCode = json;
+        _jsonCode = json;
         Name = json["name"]!.GetValue<string>();
         DefaultCostume = (uint)(json["currentCostume"]?.GetValue<int>() ?? 0);
         Costumes = GetCostumes(json["costumes"]!.AsArray());
@@ -27,9 +27,7 @@ public abstract class Target
         List<Costume> costumes = new();
 
         foreach (var costume in json.Cast<JsonObject>())
-        {
             costumes.Add(new(costume));
-        }
         
         // ReSharper disable once UseCollectionExpression
         return costumes.ToImmutableArray();
@@ -37,7 +35,7 @@ public abstract class Target
     
     internal void LoadCode()
     {
-        var blocks = (JsonObject)JsonCode["blocks"]!;
+        var blocks = (JsonObject)_jsonCode["blocks"]!;
         HashSet<CodeBlock> codeBlocks = new();
         foreach (var block in blocks)
         {
@@ -45,5 +43,6 @@ public abstract class Target
                 codeBlocks.Add(new(blocks, (JsonObject)block.Value));
         }
         _blocks = codeBlocks.ToFrozenSet();
+        _jsonCode = null!;
     }
 }
