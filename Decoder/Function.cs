@@ -22,9 +22,7 @@ public abstract class Function
             case Rotate.ScratchCodeLeft:
             {
                 var degrees = json.GetInputFloat("DEGREES");
-                if(opcode == Rotate.ScratchCodeLeft)
-                    degrees *= -1;
-                return new Rotate(degrees);
+                return new Rotate(degrees, opcode == Rotate.ScratchCodeLeft ? Rotate.TurnDirection.Left : Rotate.TurnDirection.Right);
             }
             case MoveTo.ScratchCodeRelative:
             {
