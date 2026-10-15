@@ -51,13 +51,14 @@ public abstract class CodeEntry
 
                 case OnGraterThan.ScratchCode:
                 {
-                    var source = json["fields"]?["WHENGREATERTHANMENU"]?[0]?.GetValue<string>() switch {
+                    // ReSharper disable once StringLiteralTypo
+                    var source = json.GetField("WHENGREATERTHANMENU") switch {
                         "LOUDNESS" => OnGraterThan.InputType.Loudness,
                         "TIMER" => OnGraterThan.InputType.Timer,
                         _ => throw new Exception()
                     };
-                    var threshold = float.TryParse(json["inputs"]?["VALUE"]?[1]?[1]?.GetValue<string>(), out var f) ? f : float.NaN;
-                    
+                    var threshold = json.GetInputFloat("VALUE");
+                        
                     return new OnGraterThan(source, threshold);
                 }
                 default:
@@ -65,5 +66,21 @@ public abstract class CodeEntry
             }
         
         return new Dormant();
+    }
+}
+
+file static class Helper
+{
+    public static float GetInputFloat(this JsonObject json, string key) =>
+        float.TryParse(json["inputs"]?[key]?[1]?[1]?.GetValue<string>(), out var f) ? f : float.NaN;
+    public static string GetInputString(this JsonObject json, string key) =>
+        json["inputs"]?[key]?[1]?[1]?.GetValue<string>() ?? string.Empty;
+    public static string GetField(this JsonObject json, string key) =>
+        json["fields"]?[key]?[0]?.GetValue<string>() ?? string.Empty;
+    
+    public static JsonObject GetInputReference(this JsonObject json, string key, JsonObject list)
+    {
+        var code = json["inputs"]?[key]?[1]?.GetValue<string>();
+        return list[code!]!.AsObject();
     }
 }
