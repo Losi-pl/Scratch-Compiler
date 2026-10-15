@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using System.Globalization;
 using System.Text.Json.Nodes;
 using ScratchCompiler.Decoder.Entries;
 
@@ -6,7 +7,15 @@ namespace ScratchCompiler.Decoder;
 
 public abstract class CodeEntry
 {
-    public static readonly FrozenSet<string> EntryCodes = [OnStart.ScratchCode, OnStageClick.ScratchCode, OnActorClick.ScratchCode, OnKeyPress.ScratchCode, OnBackgroundChangedTo.ScratchCode, OnGraterThan.ScratchCode, "event_whenbroadcastreceived", ];
+    public static readonly FrozenSet<string> EntryCodes = [
+        OnStart.ScratchCode, 
+        OnStageClick.ScratchCode, 
+        OnActorClick.ScratchCode, 
+        OnKeyPress.ScratchCode, 
+        OnBackgroundChangedTo.ScratchCode, 
+        OnGraterThan.ScratchCode, 
+        OnBroadcast.ScratchCode
+    ];
 
     internal static CodeEntry LoadEntry(JsonObject json)
     {
@@ -25,14 +34,14 @@ public abstract class CodeEntry
                 
                 case OnBackgroundChangedTo.ScratchCode:
                 {
-                    var backdropName = json["fields"]?["BACKDROP"]?[0]?.GetValue<string>() ?? string.Empty;
-                    var scene = Project._currentProject.project.Scene;
+                    var backdropName = json.GetField("BACKDROP");
+                    var scene = Project.CurrentProject.project.Scene;
                     return new OnBackgroundChangedTo(scene.Costumes.FirstOrDefault(b => b.Name == backdropName)!);
                 }
                 
                 case OnKeyPress.ScratchCode:
                 {
-                    var keyCode = json["fields"]?["KEY_OPTION"]?[0]?.GetValue<string>();
+                    var keyCode = json.GetField("KEY_OPTION");
                     var key = keyCode switch
                     {
                         "space" => KeyOption.Space, "any" => KeyOption.Any,
@@ -60,6 +69,14 @@ public abstract class CodeEntry
                     var threshold = json.GetInputFloat("VALUE");
                         
                     return new OnGraterThan(source, threshold);
+                }
+                case OnBroadcast.ScratchCode:
+                {
+                    var code = json["fields"]?["BROADCAST_OPTION"]?[1]?.GetValue<string>() ?? string.Empty;
+                    var br = Project.CurrentProject.project.Broadcasts.FindByScratchCode(code);
+                    if(br is null)
+                        throw new NullReferenceException($"Broadcast \"{code}\" not found");
+                    return new OnBroadcast(br);
                 }
                 default:
                     return new UnknownEntry(json);
