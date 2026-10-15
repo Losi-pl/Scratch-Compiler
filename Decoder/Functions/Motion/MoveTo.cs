@@ -20,4 +20,10 @@ public class MoveTo : Function
     {
         Random, Mouse
     }
+
+    public override string ToString() => $"Move to { Destination switch {
+        {IsT0: true, AsT0: var t0} => $"[{t0} Position]",
+        {IsT1: true, AsT1: var t1} => $"[x: {t1.Item1}, y: {t1.Item2}]",
+        _ => throw new NotSupportedException()
+    }};";
 }

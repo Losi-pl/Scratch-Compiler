@@ -9,5 +9,7 @@ public class OnGraterThan : CodeEntry
 
     internal OnGraterThan(InputType source, float threshold) => (Source, Threshold) = (source, threshold);
     
+    public override string ToString() => $"When {{{Source}}} is grater than [{Threshold}]:";
+    
     public enum InputType: byte { Loudness, Timer }
 }

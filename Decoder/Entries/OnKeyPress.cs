@@ -1,4 +1,6 @@
-﻿namespace ScratchCompiler.Decoder.Entries;
+﻿using Humanizer;
+
+namespace ScratchCompiler.Decoder.Entries;
 
 public class OnKeyPress : CodeEntry
 {
@@ -7,6 +9,8 @@ public class OnKeyPress : CodeEntry
     private KeyOption _key;
     
     internal OnKeyPress(KeyOption key) => _key = key;
+    
+    public override string ToString() => $"When {{{_key.Humanize(LetterCasing.Title)}}} is pressed:";
 }
 
 public enum KeyOption: byte

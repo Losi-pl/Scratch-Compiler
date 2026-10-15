@@ -3,4 +3,6 @@
 public class NextBackground : Function
 {
     public const string ScratchCode = "looks_nextbackdrop";
+
+    public override string ToString() => "Next Background;";
 }
