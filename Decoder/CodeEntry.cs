@@ -88,8 +88,12 @@ public abstract class CodeEntry
 
 file static class Helper
 {
-    public static float GetInputFloat(this JsonObject json, string key) =>
-        float.TryParse(json["inputs"]?[key]?[1]?[1]?.GetValue<string>(), out var f) ? f : float.NaN;
+    public static float GetInputFloat(this JsonObject json, string key)
+    {
+        var str = json["inputs"]?[key]?[1]?[1]?.GetValue<string>();
+        return float.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : float.NaN;
+    }
+    
     public static string GetInputString(this JsonObject json, string key) =>
         json["inputs"]?[key]?[1]?[1]?.GetValue<string>() ?? string.Empty;
     public static string GetField(this JsonObject json, string key) =>
