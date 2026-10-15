@@ -27,7 +27,7 @@ public abstract class Function
             case MoveTo.ScratchCodeRelative:
             {
                 var @ref = json.GetInputReference("TO", list);
-                var mode = (@ref["fields"]?["TO"]?[0]?.GetValue<string>() ?? string.Empty) switch
+                var mode = @ref.GetField("TO") switch
                 {
                     "_mouse_" => MoveTo.RelativePosition.Mouse,
                     "_random_" => MoveTo.RelativePosition.Random,
@@ -65,6 +65,8 @@ file static class Helper
         float.TryParse(json["inputs"]?[key]?[1]?[1]?.GetValue<string>(), out var f) ? f : float.NaN;
     public static string GetInputString(this JsonObject json, string key) =>
         json["inputs"]?[key]?[1]?[1]?.GetValue<string>() ?? string.Empty;
+    public static string GetField(this JsonObject json, string key) =>
+        json["fields"]?[key]?[0]?.GetValue<string>() ?? string.Empty;
     
     public static JsonObject GetInputReference(this JsonObject json, string key, JsonObject list)
     {
