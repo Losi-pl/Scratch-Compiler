@@ -18,7 +18,7 @@ public class Costume
         };
         AssetID = json["assetId"]?.GetValue<string>() ?? string.Empty;
         Resolution = json["bitmapResolution"]?.GetValue<int>() ?? 1;
-        _source = (Project._currentProject.archive, json["md5ext"]?.GetValue<string>() ?? string.Empty);
+        _source = (Project.CurrentProject.archive, json["md5ext"]?.GetValue<string>() ?? string.Empty);
         RotationCenter = (json["rotationCenterX"]?.GetValue<int>() ?? 0, json["rotationCenterY"]?.GetValue<int>() ?? 0);
     }
     

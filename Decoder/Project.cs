@@ -8,11 +8,11 @@ namespace ScratchCompiler.Decoder;
 public class Project
 {
     [ThreadStatic]
-    internal static (Project project, ZipArchive archive) _currentProject;
+    internal static (Project project, ZipArchive archive) CurrentProject;
     
     private Project(JsonObject json, ZipArchive archive)
     {
-        _currentProject = (this, archive);
+        CurrentProject = (this, archive);
         {
             var meta = json["meta"] as JsonObject ?? throw new Exception();
             FileFormat = Version.TryParse(meta["semver"]?.GetValue<string>() ?? string.Empty, out var version) ? version : throw new Exception();
@@ -41,7 +41,7 @@ public class Project
             } break;
         }
 
-        _currentProject = (null!, null!);
+        CurrentProject = (null!, null!);
     }
     
     

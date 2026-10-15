@@ -73,4 +73,4 @@ file static class Helper
         var code = json["inputs"]?[key]?[1]?.GetValue<string>();
         return list[code!]!.AsObject();
     }
-} 
+}
