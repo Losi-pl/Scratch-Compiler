@@ -61,4 +61,6 @@ public class Project
     public Version VirtualMachine { get; }
     public FrozenSet<Actor> Actors { get; }
     public Scene Scene { get; }
+
+    public AllBroadcasts Broadcasts => new(this);
 }
