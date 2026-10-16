@@ -11,4 +11,6 @@ public class UnknownFunction : Function
     {
         _entries = block.Where(kvp => kvp.Key is not ("parent" or "next" or "shadow" or "topLevel" or "x" or "y")).ToFrozenDictionary(kvp => kvp.Key, kvp => kvp.Value?.DeepClone()!);
     }
+
+    public override string ToString() => $"Code {{{_entries["opcode"]}}};";
 }
