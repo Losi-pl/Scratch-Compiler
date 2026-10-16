@@ -1,0 +1,24 @@
+﻿using OneOf;
+
+namespace ScratchCompiler.Decoder.Functions.Motion;
+
+public class GlideTo : Function
+{
+    public const string ScratchCodeRelative = "motion_glideto";
+    public const string ScratchCodeAbsolute = "motion_glidesecstoxy";
+    
+    public const string ScratchSelectionCode = "motion_glideto_menu";
+    
+    public readonly OneOf<MoveTo.RelativePosition, (float, float)> Destination;
+    public readonly float Time;
+    
+    public GlideTo(float time, MoveTo.RelativePosition target) => (Destination, Time) = (target, time);
+    public GlideTo(float time, (float x, float y) target) => (Destination, Time) = (target, time);
+    public GlideTo(float time, float x, float y) => (Destination, Time) = ((x, y), time);
+
+    public override string ToString() => $"Glide for ({Time}) secs to { Destination switch {
+        {IsT0: true, AsT0: var t0} => $"[{t0} Position]",
+        {IsT1: true, AsT1: var t1} => $"[x: {t1.Item1}, y: {t1.Item2}]",
+        _ => throw new NotSupportedException()
+    }};";
+}

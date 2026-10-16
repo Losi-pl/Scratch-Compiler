@@ -42,6 +42,25 @@ public abstract class Function
                 var y = json.GetInputFloat("Y");
                 return new MoveTo((x, y));
             }
+            case GlideTo.ScratchCodeRelative:
+            {
+                var @ref = json.GetInputReference("TO", list);
+                var mode = @ref.GetField("TO") switch
+                {
+                    "_mouse_" => MoveTo.RelativePosition.Mouse,
+                    "_random_" => MoveTo.RelativePosition.Random,
+                    _ => throw new NotSupportedException()
+                };
+                var time = json.GetInputFloat("SECS");
+                return new GlideTo(time, mode);
+            }
+            case GlideTo.ScratchCodeAbsolute:
+            {
+                var x = json.GetInputFloat("X");
+                var y = json.GetInputFloat("Y");
+                var time = json.GetInputFloat("SECS");
+                return new GlideTo(time, x, y);
+            }
             case Say.ScratchCode:
             {
                 var text = json.GetInputString("MESSAGE");
