@@ -61,15 +61,10 @@ public abstract class Function
                 var time = json.GetInputFloat("SECS");
                 return new GlideTo(time, x, y);
             }
-            case Say.ScratchCode:
+            case Say.ScratchCode or Think.ScratchCode:
             {
                 var text = json.GetInputString("MESSAGE");
-                return new Say(text);
-            }
-            case Think.ScratchCode:
-            {
-                var text = json.GetInputString("MESSAGE");
-                return new Think(text);
+                return opcode == Say.ScratchCode ? new Say(text) : new Think(text);
             }
             case NextBackground.ScratchCode:
                 return new NextBackground();
