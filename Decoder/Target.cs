@@ -70,6 +70,7 @@ public abstract class Target
     }
 
     internal Broadcast? GetBroadcastByCode(string code) => (_broadcasts?.TryGetValue(code, out var b) ?? false) ? b : null;
+    internal Variable? GetVariableByCode(string code) => (_variables?.TryGetValue(code, out var b) ?? false) ? b : null;
     internal void LoadCode()
     {
         var blocks = (JsonObject)_jsonCode["blocks"]!;

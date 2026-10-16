@@ -57,6 +57,16 @@ public readonly struct AllVariables(Project project) : IReadOnlySet<Variable>
         }
     }
 
+    internal Variable? FindByScratchCode(string scratchCode)
+    {
+        if(project.Scene.GetVariableByCode(scratchCode) is { } var)
+            return var;
+        foreach (var actor in project.Actors)
+            if(actor.GetVariableByCode(scratchCode) is { } var2)
+                return var2;
+        return null;
+    }
+    
     public bool Contains(Variable item)
     {
         if (project.Scene.Variables.Contains(item))

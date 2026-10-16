@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using ScratchCompiler.Decoder.Functions;
 using ScratchCompiler.Decoder.Functions.Looks;
 using ScratchCompiler.Decoder.Functions.Motion;
+using ScratchCompiler.Decoder.Functions.Data;
 
 namespace ScratchCompiler.Decoder;
 
@@ -67,6 +68,17 @@ public abstract class Function
                 if (mode != "_mouse_")
                     throw new InvalidCastException();
                 return new PointTowards();
+            }
+            case SetVariable.ScratchSetXCode or SetVariable.ScratchSetYCode or SetVariable.ScratchRotationCode:
+            {
+                var value = json.GetInputFloat(SetVariable.SystemVariables[opcode].Value);
+                return new SetVariable(SetVariable.SystemVariables[opcode].Type, value);
+            }
+            case SetVariable.ScratchCode:
+            {
+                var @ref = json["fields"]!["VARIABLE"]![1]!.GetValue<string>();
+                var variable = Project.CurrentProject.project.Variables.FindByScratchCode(@ref);
+                return new SetVariable(variable ?? throw new KeyNotFoundException(), json.GetInputFloat("VALUE"));
             }
             case Say.ScratchCode or Think.ScratchCode:
             {
