@@ -19,8 +19,7 @@ public abstract class Function
                 var steps = json.GetInputFloat("STEPS");
                 return new MoveBySteps(steps);
             }
-            case Rotate.ScratchCodeRight:
-            case Rotate.ScratchCodeLeft:
+            case Rotate.ScratchCodeRight or Rotate.ScratchCodeLeft:
             {
                 var degrees = json.GetInputFloat("DEGREES");
                 return new Rotate(degrees, opcode == Rotate.ScratchCodeLeft ? Rotate.TurnDirection.Left : Rotate.TurnDirection.Right);
@@ -60,6 +59,14 @@ public abstract class Function
                 var y = json.GetInputFloat("Y");
                 var time = json.GetInputFloat("SECS");
                 return new GlideTo(time, x, y);
+            }
+            case PointTowards.ScratchCode:
+            {
+                var @ref = json.GetInputReference("TOWARDS", list);
+                var mode = @ref.GetField("TOWARDS");
+                if (mode != "_mouse_")
+                    throw new InvalidCastException();
+                return new PointTowards();
             }
             case Say.ScratchCode or Think.ScratchCode:
             {
