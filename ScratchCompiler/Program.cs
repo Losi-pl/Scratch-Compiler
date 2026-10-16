@@ -17,6 +17,9 @@ for (int i = 0; i < args.Length; i++)
             foreach (var scene in project.Scene.Costumes)
                 Console.WriteLine($"     - {scene.Name}");
             Console.WriteLine($"    Scripts: {project.Scene.Blocks.Count}");
+            Console.WriteLine($"    Variables: {project.Scene.Variables.Length}");
+            foreach (var variable in project.Scene.Variables)
+                Console.WriteLine($"     - {variable.Name}");
 
             foreach (var actor in project.Actors)
             {
@@ -25,6 +28,9 @@ for (int i = 0; i < args.Length; i++)
                 foreach (var scene in actor.Costumes)
                     Console.WriteLine($"     - {scene.Name}");
                 Console.WriteLine($"    Scripts: {actor.Blocks.Count}");
+                Console.WriteLine($"    Variables: {actor.Variables.Length}");
+                foreach (var variable in actor.Variables)
+                    Console.WriteLine($"     - {variable.Name}");
             }
             
         } return;
