@@ -80,6 +80,17 @@ public abstract class Function
                 var variable = Project.CurrentProject.project.Variables.FindByScratchCode(@ref);
                 return new SetVariable(variable ?? throw new KeyNotFoundException(), json.GetInputFloat("VALUE"));
             }
+            case ChangeVariable.ScratchXCode or ChangeVariable.ScratchYCode:
+            {
+                var value = json.GetInputFloat(ChangeVariable.SystemVariables[opcode].Value);
+                return new ChangeVariable(ChangeVariable.SystemVariables[opcode].Type, value);
+            }
+            case ChangeVariable.ScratchCode:
+            {
+                var @ref = json["fields"]!["VARIABLE"]![1]!.GetValue<string>();
+                var variable = Project.CurrentProject.project.Variables.FindByScratchCode(@ref);
+                return new ChangeVariable(variable ?? throw new KeyNotFoundException(), json.GetInputFloat("VALUE"));
+            }
             case Say.ScratchCode or Think.ScratchCode:
             {
                 var text = json.GetInputString("MESSAGE");

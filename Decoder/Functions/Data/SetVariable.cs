@@ -24,11 +24,6 @@ public class SetVariable : Function
     
     public SetVariable(Variable destination, float value) => (_destination, _value) = (destination, value);
     public SetVariable(SysVariables destination, float value) => (_destination, _value) = (destination, value);
-    
-    public enum SysVariables : byte
-    {
-        XPosition, YPosition, Rotation
-    }
 
     public override string ToString() => $"Set {{{
         _destination switch {
@@ -37,4 +32,9 @@ public class SetVariable : Function
             _ => throw new InvalidOperationException()
         }
     }}} to [{_value}];";
+    
+    public enum SysVariables : byte
+    {
+        XPosition, YPosition, Rotation
+    }
 }
