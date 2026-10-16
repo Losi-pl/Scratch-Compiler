@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Text;
 using System.Text.Json.Nodes;
 using ScratchCompiler.Decoder.Entries;
 
@@ -33,5 +34,18 @@ public class CodeBlock
             var nextCode = current["next"]?.GetValue<string>();
             return nextCode is null ? null : json[nextCode]!.AsObject();
         }
+    }
+
+    public string ToScript()
+    {
+        StringBuilder sb = new();
+        sb.Append(_entry);
+        foreach (var function in _functions)
+        {
+            sb.Append("\n    ");
+            sb.AppendJoin("\n    ", function.ToString()!.Split('\n'));
+        }
+        
+        return  sb.ToString();
     }
 }
