@@ -20,7 +20,7 @@ public class Project
         }
         switch (FileFormat)
         {
-            case { Major: 3, Minor: 0, Build: 0 }:
+            case { Major: 3, Minor: 0, Build: _, Revision: _ }:
             {
                 HashSet<Actor> actors = new();
                 foreach (var targetNode in json["targets"]?.AsArray() ?? throw new Exception())
