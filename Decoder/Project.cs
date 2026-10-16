@@ -63,4 +63,5 @@ public class Project
     public Scene Scene { get; }
 
     public AllBroadcasts Broadcasts => new(this);
+    public AllVariables Variables => new(this);
 }

@@ -1,5 +1,7 @@
 ﻿using System.Collections.Frozen;
 using System.Collections.Immutable;
+using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace ScratchCompiler.Decoder;
@@ -9,6 +11,7 @@ public abstract class Target
     private JsonObject _jsonCode;
     private FrozenSet<CodeBlock> _blocks = null!;
     private FrozenDictionary<string, Broadcast> _broadcasts;
+    private FrozenDictionary<string, Variable> _variables;
 
     internal Target(JsonObject json)
     {
@@ -18,6 +21,34 @@ public abstract class Target
         Costumes = GetCostumes(json["costumes"]!.AsArray());
         _broadcasts = json["broadcasts"]!.AsObject().ToFrozenDictionary(kvp => kvp.Key,
             kvp => new Broadcast(kvp.Value?.GetValue<string>() ?? string.Empty));
+
+        _variables = json["variables"]!.AsObject().ToFrozenDictionary(kvp => kvp.Key, kvp =>
+        {
+            var name = kvp.Value![0]!.GetValue<string>();
+            var jsonVal = kvp.Value![1]?.AsValue();
+
+            if (jsonVal is not null)
+            {
+                switch (jsonVal.GetValueKind())
+                {
+                    case JsonValueKind.Number:
+                    {
+                        var code = jsonVal.ToJsonString();
+                        if(int.TryParse(code, out var i))
+                            return new Variable(name, this, i);
+                        if(float.TryParse(code, NumberStyles.Float, CultureInfo.InvariantCulture, out var f))
+                            return new Variable(name, this, f);
+                        
+                        return new Variable(name, this, float.NaN);
+                    }
+                    case JsonValueKind.String:
+                        return new Variable(name, this, jsonVal.GetValue<string>());
+                    case JsonValueKind.True or JsonValueKind.False:
+                        return new Variable(name, this, jsonVal.GetValueKind() == JsonValueKind.True);
+                }
+            }    
+            return new Variable(name, this, null!);
+        });
     }
 
     public string Name { get; }
@@ -25,6 +56,7 @@ public abstract class Target
     public ImmutableArray<Costume> Costumes { get; }
     public readonly uint DefaultCostume;
     public ImmutableArray<Broadcast> Broadcasts => _broadcasts.Values;
+    public ImmutableArray<Variable> Variables => _variables.Values;
 
     private ImmutableArray<Costume> GetCostumes(JsonArray json)
     {
