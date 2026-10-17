@@ -9,16 +9,16 @@ public class GlideTo : Function
     
     public const string ScratchSelectionCode = "motion_glideto_menu";
     
-    public readonly OneOf<MoveTo.RelativePosition, (float, float)> Destination;
-    public readonly float Time;
+    public readonly OneOf<MoveTo.RelativePosition, (FloatArgument, FloatArgument)> Destination;
+    public readonly FloatArgument Time;
     
-    public GlideTo(float time, MoveTo.RelativePosition target) => (Destination, Time) = (target, time);
-    public GlideTo(float time, (float x, float y) target) => (Destination, Time) = (target, time);
-    public GlideTo(float time, float x, float y) => (Destination, Time) = ((x, y), time);
+    public GlideTo(FloatArgument time, MoveTo.RelativePosition target) => (Destination, Time) = (target, time);
+    public GlideTo(FloatArgument time, (FloatArgument x, FloatArgument y) target) => (Destination, Time) = (target, time);
+    public GlideTo(FloatArgument time, FloatArgument x, FloatArgument y) => (Destination, Time) = ((x, y), time);
 
     public override string ToString() => $"Glide for ({Time}) secs to { Destination switch {
         {IsT0: true, AsT0: var t0} => $"[{t0} Position]",
-        {IsT1: true, AsT1: var t1} => $"[x: {t1.Item1}, y: {t1.Item2}]",
+        {IsT1: true, AsT1: var t1} => $"x: {t1.Item1}, y: {t1.Item2}",
         _ => throw new NotSupportedException()
     }};";
 }

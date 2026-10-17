@@ -19,12 +19,12 @@ public abstract class Function
         {
             case MoveBySteps.ScratchCode:
             {
-                var steps = json.GetInputFloat("STEPS");
+                var steps = json.GetFloatInput(list, "STEPS");
                 return new MoveBySteps(steps);
             }
             case Rotate.ScratchCodeRight or Rotate.ScratchCodeLeft:
             {
-                var degrees = json.GetInputFloat("DEGREES");
+                var degrees = json.GetFloatInput(list, "DEGREES");
                 return new Rotate(degrees, opcode == Rotate.ScratchCodeLeft ? Rotate.TurnDirection.Left : Rotate.TurnDirection.Right);
             }
             case MoveTo.ScratchCodeRelative:
@@ -40,8 +40,8 @@ public abstract class Function
             }
             case MoveTo.ScratchCodeAbsolute:
             {
-                var x = json.GetInputFloat("X");
-                var y = json.GetInputFloat("Y");
+                var x = json.GetFloatInput(list, "X");
+                var y = json.GetFloatInput(list, "Y");
                 return new MoveTo((x, y));
             }
             case GlideTo.ScratchCodeRelative:
@@ -53,14 +53,14 @@ public abstract class Function
                     "_random_" => MoveTo.RelativePosition.Random,
                     _ => throw new NotSupportedException()
                 };
-                var time = json.GetInputFloat("SECS");
+                var time = json.GetFloatInput(list, "SECS");
                 return new GlideTo(time, mode);
             }
             case GlideTo.ScratchCodeAbsolute:
             {
-                var x = json.GetInputFloat("X");
-                var y = json.GetInputFloat("Y");
-                var time = json.GetInputFloat("SECS");
+                var x = json.GetFloatInput(list, "X");
+                var y = json.GetFloatInput(list, "Y");
+                var time = json.GetFloatInput(list, "SECS");
                 return new GlideTo(time, x, y);
             }
             case PointTowards.ScratchCode:
@@ -148,6 +148,44 @@ file static class Helper
                 throw new NotSupportedException("Unknown input type");
         }
     }
+
+    public static FloatArgument GetFloatInput(this JsonObject json, JsonObject list, string key)
+    {
+        switch (json["inputs"]?[key]?[0]!.GetValue<int>())
+        {
+            case 1:
+            {
+                var str = json["inputs"]?[key]?[1]?[1]?.GetValue<string>();
+                var @float = float.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : float.NaN;
+                return new ConstFloat(@float);
+            }
+                
+            case 3:
+            {
+                if (json["inputs"]?[key]?[1]?.GetValueKind() == JsonValueKind.String)
+                {
+                    var @ref = json["inputs"]?[key]?[1]?.GetValue<string>() ?? string.Empty;
+                    var arg = list[@ref]!.AsObject();
+                    return FloatArgument.Parse(arg, list) ?? 
+                           new UnknownFloatArgument(
+                               arg["opcode"]?.GetValue<string>() ?? string.Empty,
+                               float.TryParse(json["inputs"]?[key]?[2]?[1]?.GetValue<string>() ?? string.Empty, 
+                                   NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : float.NaN);
+                }
+                if (json["inputs"]?[key]?[1]?[0]?.GetValue<int>() == 12)
+                {
+                    var @ref = json["inputs"]?[key]?[1]?[2]?.GetValue<string>();
+                    var var = Project.Current.project.Variables.FindByScratchCode(@ref!);
+                    return new GetFloat(var ?? throw new KeyNotFoundException());
+                }
+                
+                throw new KeyNotFoundException();
+            }
+            default:
+                throw new NotSupportedException("Unknown input type");
+        }
+    }
+    
     public static JsonObject GetInputReference(this JsonObject json, string key, JsonObject list)
     {
         var code = json["inputs"]?[key]?[1]?.GetValue<string>();

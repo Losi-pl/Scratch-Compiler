@@ -1,14 +1,14 @@
 ﻿namespace ScratchCompiler.Decoder.Functions.Motion;
 
-public class Rotate(float degrees, Rotate.TurnDirection direction) : Function
+public class Rotate(FloatArgument degrees, Rotate.TurnDirection direction) : Function
 {
     public const string ScratchCodeLeft = "motion_turnleft";
     public const string ScratchCodeRight = "motion_turnright";
     
-    public float Degrees => degrees;
+    public FloatArgument Degrees => degrees;
     public TurnDirection Direction => direction;
 
-    public override string ToString() => $"Rotate [{degrees}] degrees to the {direction.ToString().ToLower()};";
+    public override string ToString() => $"Rotate {degrees} degrees to the {direction.ToString().ToLower()};";
     
     public enum TurnDirection : byte
     {
