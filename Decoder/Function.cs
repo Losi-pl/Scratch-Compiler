@@ -1,9 +1,11 @@
 ﻿using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using ScratchCompiler.Decoder.Functions;
 using ScratchCompiler.Decoder.Functions.Looks;
 using ScratchCompiler.Decoder.Functions.Motion;
 using ScratchCompiler.Decoder.Functions.Data;
+using ScratchCompiler.Decoder.Operations;
 
 namespace ScratchCompiler.Decoder;
 
@@ -93,7 +95,7 @@ public abstract class Function
             }
             case Say.ScratchCode or Think.ScratchCode:
             {
-                var text = json.GetInputString("MESSAGE");
+                var text = json.GetStringInput(list, "MESSAGE");
                 return opcode == Say.ScratchCode ? new Say(text) : new Think(text);
             }
             case NextBackground.ScratchCode:
@@ -115,7 +117,37 @@ file static class Helper
         json["inputs"]?[key]?[1]?[1]?.GetValue<string>() ?? string.Empty;
     public static string GetField(this JsonObject json, string key) =>
         json["fields"]?[key]?[0]?.GetValue<string>() ?? string.Empty;
-    
+
+    public static Argument GetStringInput(this JsonObject json, JsonObject list, string key)
+    {
+        switch (json["inputs"]?[key]?[0]!.GetValue<int>())
+        {
+            case 1:
+                return new ConstString(json["inputs"]?[key]?[1]?[1]?.GetValue<string>() ?? string.Empty);
+            case 3:
+            {
+                if (json["inputs"]?[key]?[1]?.GetValueKind() == JsonValueKind.String)
+                {
+                    var @ref = json["inputs"]?[key]?[1]?.GetValue<string>() ?? string.Empty;
+                    var arg = list[@ref]!.AsObject();
+                    return Argument.Parse(arg, list) ?? 
+                           new UnknownStringArgument(
+                               arg["opcode"]?.GetValue<string>() ?? string.Empty,
+                               json["inputs"]?[key]?[2]?[1]?.GetValue<string>() ?? string.Empty);
+                }
+                if (json["inputs"]?[key]?[1]?[0]?.GetValue<int>() == 12)
+                {
+                    var @ref = json["inputs"]?[key]?[1]?[2]?.GetValue<string>();
+                    var var = Project.Current.project.Variables.FindByScratchCode(@ref!);
+                    return new GetString(var ?? throw new KeyNotFoundException());
+                }
+                
+                throw new KeyNotFoundException();
+            }
+            default:
+                throw new NotSupportedException("Unknown input type");
+        }
+    }
     public static JsonObject GetInputReference(this JsonObject json, string key, JsonObject list)
     {
         var code = json["inputs"]?[key]?[1]?.GetValue<string>();

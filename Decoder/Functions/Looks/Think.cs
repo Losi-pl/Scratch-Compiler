@@ -2,11 +2,11 @@
 
 namespace ScratchCompiler.Decoder.Functions.Looks;
 
-public class Think(string text) : Function
+public class Think(Argument text) : Function
 {
     public const string ScratchCode = "looks_think";
 
-    public string Text => text;
+    public Argument Text => text;
 
-    public override string ToString() => $"Think [{text.Truncate(20)}];";
+    public override string ToString() => $"Think {text};";
 }
