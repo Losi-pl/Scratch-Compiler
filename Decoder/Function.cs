@@ -73,25 +73,25 @@ public abstract class Function
             }
             case SetVariable.ScratchSetXCode or SetVariable.ScratchSetYCode or SetVariable.ScratchRotationCode:
             {
-                var value = json.GetInputFloat(SetVariable.SystemVariables[opcode].Value);
+                var value = json.GetGeneralInput(list, SetVariable.SystemVariables[opcode].Value);
                 return new SetVariable(SetVariable.SystemVariables[opcode].Type, value);
             }
             case SetVariable.ScratchCode:
             {
                 var @ref = json["fields"]!["VARIABLE"]![1]!.GetValue<string>();
                 var variable = Project.Current.project.Variables.FindByScratchCode(@ref);
-                return new SetVariable(variable ?? throw new KeyNotFoundException(), json.GetInputFloat("VALUE"));
+                return new SetVariable(variable ?? throw new KeyNotFoundException(), json.GetGeneralInput(list, "VALUE"));
             }
             case ChangeVariable.ScratchXCode or ChangeVariable.ScratchYCode:
             {
-                var value = json.GetInputFloat(ChangeVariable.SystemVariables[opcode].Value);
+                var value = json.GetGeneralInput(list, ChangeVariable.SystemVariables[opcode].Value);
                 return new ChangeVariable(ChangeVariable.SystemVariables[opcode].Type, value);
             }
             case ChangeVariable.ScratchCode:
             {
                 var @ref = json["fields"]!["VARIABLE"]![1]!.GetValue<string>();
                 var variable = Project.Current.project.Variables.FindByScratchCode(@ref);
-                return new ChangeVariable(variable ?? throw new KeyNotFoundException(), json.GetInputFloat("VALUE"));
+                return new ChangeVariable(variable ?? throw new KeyNotFoundException(), json.GetGeneralInput(list, "VALUE"));
             }
             case Say.ScratchCode or Think.ScratchCode:
             {
@@ -108,13 +108,6 @@ public abstract class Function
 
 file static class Helper
 {
-    public static float GetInputFloat(this JsonObject json, string key)
-    {
-        var str = json["inputs"]?[key]?[1]?[1]?.GetValue<string>();
-        return float.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : float.NaN;
-    }
-    public static string GetInputString(this JsonObject json, string key) =>
-        json["inputs"]?[key]?[1]?[1]?.GetValue<string>() ?? string.Empty;
     public static string GetField(this JsonObject json, string key) =>
         json["fields"]?[key]?[0]?.GetValue<string>() ?? string.Empty;
 
@@ -148,7 +141,6 @@ file static class Helper
                 throw new NotSupportedException("Unknown input type");
         }
     }
-
     public static FloatArgument GetFloatInput(this JsonObject json, JsonObject list, string key)
     {
         switch (json["inputs"]?[key]?[0]!.GetValue<int>())
@@ -184,6 +176,72 @@ file static class Helper
             default:
                 throw new NotSupportedException("Unknown input type");
         }
+    }
+
+    public static Argument GetGeneralInput(this JsonObject json, JsonObject list, string key)
+    {
+        switch (json["inputs"]?[key]?[0]!.GetValue<int>())
+        {
+            case 1:
+            {
+                var str = json["inputs"]?[key]?[1]?[1]?.GetValue<string>();
+                if(int.TryParse(str, out var i))
+                    return new ConstInt(i);
+                if(float.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out var f))
+                    return new ConstFloat(f);
+                return str switch
+                {
+                    "true" => new ConstBool(true),
+                    "false" => new ConstBool(false),
+                    _ => new ConstString(str ?? string.Empty)
+                };
+            }
+            case 3:
+            {
+                var arg = json["inputs"]?[key]?[1];
+                switch (arg?.GetValueKind())
+                {
+                    case JsonValueKind.String:
+                    {
+                        var @ref = arg.GetValue<string>();
+                        var argument = Argument.Parse(list[@ref]!.AsObject(), list);
+                        if (argument is not null)
+                            return argument;
+                        else
+                        {
+                            var opcode = list[@ref]!["opcode"]?.GetValue<string>() ?? string.Empty;
+                            var @const = json["inputs"]?[key]?[2]?[1]?.GetValue<string>() ?? string.Empty;
+                            if (int.TryParse(@const, out var i))
+                                return new UnknownGeneralArgument(opcode, i);
+                            if (float.TryParse(@const, out var f))
+                                return new UnknownGeneralArgument(opcode, f);
+                            if (bool.TryParse(@const, out var b))
+                                return new UnknownGeneralArgument(opcode, b);
+                            return new UnknownGeneralArgument(opcode, @const);
+                        }
+                    }
+                    case JsonValueKind.Array:
+                    {
+                        var varCode = json["inputs"]?[key]?[1]?[2]?.GetValue<string>() ?? string.Empty;
+                        var variable = Project.Current.project.Variables.FindByScratchCode(varCode);
+                        if(variable is not null)
+                            return new GeneralGet(variable);
+                        else
+                        {
+                            var @const = json["inputs"]?[key]?[2]?[1]?.GetValue<string>() ?? string.Empty;
+                            if (int.TryParse(@const, out var i))
+                                return new ConstInt(i);
+                            if (float.TryParse(@const, out var f))
+                                return new ConstFloat(f);
+                            if (bool.TryParse(@const, out var b))
+                                return new ConstBool(b);
+                            return new ConstString(@const);
+                        }
+                    }
+                }
+            } break;
+        }
+        return null!;
     }
     
     public static JsonObject GetInputReference(this JsonObject json, string key, JsonObject list)

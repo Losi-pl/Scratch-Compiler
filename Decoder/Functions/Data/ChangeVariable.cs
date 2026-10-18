@@ -19,10 +19,10 @@ public class ChangeVariable : Function
         }.ToFrozenDictionary();
     
     private readonly OneOf<SysVariables, Variable> _destination;
-    private readonly float _value;
+    private readonly Argument _value;
     
-    public ChangeVariable(Variable destination, float value) => (_destination, _value) = (destination, value);
-    public ChangeVariable(SysVariables destination, float value) => (_destination, _value) = (destination, value);
+    public ChangeVariable(Variable destination, Argument value) => (_destination, _value) = (destination, value);
+    public ChangeVariable(SysVariables destination, Argument value) => (_destination, _value) = (destination, value);
 
     public override string ToString() => $"Change {{{
         _destination switch {

@@ -20,10 +20,10 @@ public class SetVariable : Function
         }.ToFrozenDictionary();
     
     private readonly OneOf<SysVariables, Variable> _destination;
-    private readonly float _value;
+    private readonly Argument _value;
     
-    public SetVariable(Variable destination, float value) => (_destination, _value) = (destination, value);
-    public SetVariable(SysVariables destination, float value) => (_destination, _value) = (destination, value);
+    public SetVariable(Variable destination, Argument value) => (_destination, _value) = (destination, value);
+    public SetVariable(SysVariables destination, Argument value) => (_destination, _value) = (destination, value);
 
     public override string ToString() => $"Set {{{
         _destination switch {
@@ -31,7 +31,7 @@ public class SetVariable : Function
             {IsT1:true, AsT1: var t} => t.Name,
             _ => throw new InvalidOperationException()
         }
-    }}} to [{_value}];";
+    }}} to {_value};";
     
     public enum SysVariables : byte
     {
