@@ -106,7 +106,7 @@ public abstract class Function
     }
 }
 
-file static class Helper
+internal static class ArgHelper
 {
     public static string GetField(this JsonObject json, string key) =>
         json["fields"]?[key]?[0]?.GetValue<string>() ?? string.Empty;

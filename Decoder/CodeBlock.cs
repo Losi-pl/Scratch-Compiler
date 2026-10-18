@@ -8,12 +8,11 @@ namespace ScratchCompiler.Decoder;
 public class CodeBlock
 {
     private readonly CodeEntry _entry;
-    private ImmutableArray<Function> _functions;
+    private readonly ImmutableArray<Function> _functions;
 
     internal CodeBlock(JsonObject json, JsonObject entry)
     {
-        var meCodeName = entry.GetPropertyName();
-        _entry = CodeEntry.LoadEntry(entry);
+        _entry = CodeEntry.LoadEntry(entry, json);
         List<Function> functions = [];
         
         var current = entry;
@@ -26,6 +25,7 @@ public class CodeBlock
             current = Next(current);
         }
         
+        // ReSharper disable once UseCollectionExpression
         _functions = functions.ToImmutableArray();
         
         // ReSharper disable once VariableHidesOuterVariable

@@ -17,7 +17,7 @@ public abstract class CodeEntry
         OnBroadcast.ScratchCode
     ];
 
-    internal static CodeEntry LoadEntry(JsonObject json)
+    internal static CodeEntry LoadEntry(JsonObject json, JsonObject list)
     {
         var opcode = json["opcode"]?.GetValue<string>() ?? string.Empty;
         if (CodeEntry.EntryCodes.Contains(opcode))
@@ -66,7 +66,7 @@ public abstract class CodeEntry
                         "TIMER" => OnGraterThan.InputType.Timer,
                         _ => throw new Exception()
                     };
-                    var threshold = json.GetInputFloat("VALUE");
+                    var threshold = json.GetFloatInput(list, "VALUE");
                         
                     return new OnGraterThan(source, threshold);
                 }
@@ -83,25 +83,5 @@ public abstract class CodeEntry
             }
         
         return new Dormant();
-    }
-}
-
-file static class Helper
-{
-    public static float GetInputFloat(this JsonObject json, string key)
-    {
-        var str = json["inputs"]?[key]?[1]?[1]?.GetValue<string>();
-        return float.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : float.NaN;
-    }
-    
-    public static string GetInputString(this JsonObject json, string key) =>
-        json["inputs"]?[key]?[1]?[1]?.GetValue<string>() ?? string.Empty;
-    public static string GetField(this JsonObject json, string key) =>
-        json["fields"]?[key]?[0]?.GetValue<string>() ?? string.Empty;
-    
-    public static JsonObject GetInputReference(this JsonObject json, string key, JsonObject list)
-    {
-        var code = json["inputs"]?[key]?[1]?.GetValue<string>();
-        return list[code!]!.AsObject();
     }
 }

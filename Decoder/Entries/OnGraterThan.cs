@@ -5,9 +5,9 @@ public class OnGraterThan : CodeEntry
     public const string ScratchCode = "event_whengreaterthan";
 
     private InputType Source { get; }
-    private float Threshold { get; } = 0;
+    private FloatArgument Threshold { get; }
 
-    internal OnGraterThan(InputType source, float threshold) => (Source, Threshold) = (source, threshold);
+    internal OnGraterThan(InputType source, FloatArgument threshold) => (Source, Threshold) = (source, threshold);
     
     public override string ToString() => $"When {{{Source}}} is grater than [{Threshold}]:";
     
