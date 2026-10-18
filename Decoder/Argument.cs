@@ -23,19 +23,52 @@ public abstract class Argument
 
 public abstract class LogicArgument : Argument
 {
-    
+    public new static LogicArgument? Parse(JsonObject json, JsonObject list)
+    {
+        var opcode = json["opcode"]!.GetValue<string>();
+        switch (opcode)
+        {
+            case GetBool.ScratchOnlineCode:
+                return new GetBool(GetBool.SystemSourcesMap[opcode]);
+        }
+
+        return null;
+    }
 }
 
 public abstract class FloatArgument : Argument
 {
-    public static FloatArgument? Parse(JsonObject json, JsonObject list)
+    public new static FloatArgument? Parse(JsonObject json, JsonObject list)
     {
         var opcode = json["opcode"]!.GetValue<string>();
         switch (opcode)
         {
             case GetFloat.ScratchXPosCode or GetFloat.ScratchYPosCode or GetFloat.ScratchRotationCode:
                 return new GetFloat(GetFloat.SystemSourcesMap[opcode]);
-            
+            case AddOperator.ScratchCode:
+            {
+                var a = json.GetFloatInput(list, "NUM1");
+                var b = json.GetFloatInput(list, "NUM2");
+                return new AddOperator(a, b);
+            }
+            case SubtractOperator.ScratchCode:
+            {
+                var a = json.GetFloatInput(list, "NUM1");
+                var b = json.GetFloatInput(list, "NUM2");
+                return new SubtractOperator(a, b);
+            }
+            case MultiplyOperator.ScratchCode:
+            {
+                var a = json.GetFloatInput(list, "NUM1");
+                var b = json.GetFloatInput(list, "NUM2");
+                return new MultiplyOperator(a, b);
+            }
+            case DivideOperator.ScratchCode:
+            {
+                var a = json.GetFloatInput(list, "NUM1");
+                var b = json.GetFloatInput(list, "NUM2");
+                return new DivideOperator(a, b);
+            }
         }
         return null;
     }
