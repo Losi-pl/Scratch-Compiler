@@ -16,7 +16,7 @@ public class GlideTo : Function
     public GlideTo(FloatArgument time, (FloatArgument x, FloatArgument y) target) => (Destination, Time) = (target, time);
     public GlideTo(FloatArgument time, FloatArgument x, FloatArgument y) => (Destination, Time) = ((x, y), time);
 
-    public override string ToString() => $"Glide for ({Time}) secs to { Destination switch {
+    public override string ToString() => $"Glide for {Time} secs to { Destination switch {
         {IsT0: true, AsT0: var t0} => $"[{t0} Position]",
         {IsT1: true, AsT1: var t1} => $"x: {t1.Item1}, y: {t1.Item2}",
         _ => throw new NotSupportedException()

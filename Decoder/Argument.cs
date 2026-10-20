@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using ScratchCompiler.Decoder.Operations;
 
 namespace ScratchCompiler.Decoder;
@@ -15,6 +14,8 @@ public abstract class Argument
                 return new GetString(GetString.SystemSources.Username);
             
         }
+        if(LogicArgument.Parse(json, list) is { } bArg)
+            return bArg;
         if(FloatArgument.Parse(json, list) is { } fArg)
             return fArg;
         return null;

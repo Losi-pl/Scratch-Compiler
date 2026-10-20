@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text;
 
 namespace ScratchCompiler.Decoder.Operations;
 
@@ -11,13 +12,34 @@ public class DivideOperator(FloatArgument a, FloatArgument b) : FloatArgument, I
     public FloatArgument B => b;
 
     public override string ToString() => ToString(true);
-    public string ToString(bool useBrackets) => useBrackets ? $"({CustomNumerics(a)} / {CustomNumerics(b)})" : $"{CustomNumerics(a)} / {CustomNumerics(b)}";
-
-    private static string CustomNumerics(FloatArgument arg) => arg switch
+    public string ToString(bool useBrackets)
     {
-        ConstFloat fl => fl.Const.ToString(CultureInfo.InvariantCulture),
-        ConstInt @in => @in.Const.ToString(),
-        null => Null,
-        _ => arg.ToString()
-    } ?? Null;
+        StringBuilder sb = new();
+        if (useBrackets)
+            sb.Append('(');
+
+        {
+            switch (a)
+            {
+                case IConstArgument and IBracketedString bs: sb.Append(bs.ToString(false)); break;
+                case MultiplyOperator or  DivideOperator: sb.Append(((IBracketedString)a).ToString(false)); break;
+                default: sb.Append(a); break;
+            }
+        }
+        
+        sb.Append(" * ");
+
+        {
+            switch (b)
+            {
+                case IConstArgument and IBracketedString bs: sb.Append(bs.ToString(false)); break;
+                default: sb.Append(b); break;
+            }
+        }
+        
+        if (useBrackets)
+            sb.Append(')');
+        return sb.ToString();
+        
+    }
 }

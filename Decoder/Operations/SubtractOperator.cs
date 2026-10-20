@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text;
 
 namespace ScratchCompiler.Decoder.Operations;
 
@@ -11,13 +12,33 @@ public class SubtractOperator(FloatArgument a, FloatArgument b) : FloatArgument,
     public FloatArgument B => b;
 
     public override string ToString() => ToString(true);
-    public string ToString(bool useBrackets) => useBrackets ? $"({CustomNumerics(a)} - {CustomNumerics(b)})" : $"{CustomNumerics(a)} - {CustomNumerics(b)}";
-
-    private static string CustomNumerics(FloatArgument arg) => arg switch
+    public string ToString(bool useBrackets)
     {
-        ConstFloat fl => fl.Const.ToString(CultureInfo.InvariantCulture),
-        ConstInt @in => @in.Const.ToString(),
-        null => Null,
-        _ => arg.ToString()
-    } ?? Null;
+        StringBuilder sb = new();
+        if (useBrackets)
+            sb.Append('(');
+
+        {
+            if (a is IConstArgument and IBracketedString bs)
+                sb.Append(bs.ToString(false));
+            else if(a is AddOperator or SubtractOperator)
+                sb.Append(((IBracketedString)a).ToString(false));
+            else
+                sb.Append(a);
+        }
+        
+        sb.Append(" - ");
+        
+        {
+            if (b is IConstArgument and IBracketedString bs)
+                sb.Append(bs.ToString(false));
+            else
+                sb.Append(b);
+        }
+        
+        if (useBrackets)
+            sb.Append(')');
+        return sb.ToString();
+        
+    }
 }

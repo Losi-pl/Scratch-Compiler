@@ -30,5 +30,5 @@ public class ChangeVariable : Function
             {IsT1:true, AsT1: var t} => t.Name,
             _ => throw new InvalidOperationException()
         }
-    }}} by [{_value}];";
+    }}} by {_value};";
 }
