@@ -1,4 +1,5 @@
 ﻿using OneOf;
+using ScratchCompiler.Decoder.Operations;
 
 namespace ScratchCompiler.Decoder.Functions.Motion;
 
@@ -18,7 +19,9 @@ public class GlideTo : Function
 
     public override string ToString() => $"Glide for {Time} secs to { Destination switch {
         {IsT0: true, AsT0: var t0} => $"[{t0} Position]",
-        {IsT1: true, AsT1: var t1} => $"x: {t1.Item1}, y: {t1.Item2}",
+        {IsT1: true, AsT1: var t1} => $"[x: {
+            (t1.Item1 is IConstArgument and IBracketedString x ? x.ToString(false) : t1.Item1.ToString())}, y: {
+                (t1.Item2 is IConstArgument and IBracketedString y ? y.ToString(false) : t1.Item2.ToString())}]",
         _ => throw new NotSupportedException()
     }};";
 }

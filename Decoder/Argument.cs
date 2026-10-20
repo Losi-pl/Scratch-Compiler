@@ -70,6 +70,29 @@ public abstract class FloatArgument : Argument
                 var b = json.GetFloatInput(list, "NUM2");
                 return new DivideOperator(a, b);
             }
+            case RandomNumber.ScratchCode:
+            {
+                var from = json.GetFloatInput(list, "FROM");
+                var to = json.GetFloatInput(list, "TO");
+                return new RandomNumber(from, to);
+            }
+            case Round.ScratchCode:
+            {
+                var val = json.GetFloatInput(list, "NUM");
+                return new Round(val);
+            }
+            case Modulo.ScratchName:
+            {
+                var dividend = json.GetFloatInput(list, "NUM1");
+                var divisor = json.GetFloatInput(list, "NUM2");
+                return new Modulo(dividend, divisor);
+            }
+            case MathFunc.ScratchCode:
+            {
+                var @operator = json.GetField("OPERATOR");
+                var value = json.GetFloatInput(list, "NUM");
+                return new MathFunc(MathFunc.OperationMap[@operator], value);
+            }
         }
         return null;
     }
