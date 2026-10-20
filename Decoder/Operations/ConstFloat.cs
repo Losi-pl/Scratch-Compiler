@@ -1,8 +1,11 @@
-﻿namespace ScratchCompiler.Decoder.Operations;
+﻿using System.Globalization;
 
-public class ConstFloat(float @const) : FloatArgument
+namespace ScratchCompiler.Decoder.Operations;
+
+public class ConstFloat(float @const) : FloatArgument, IBracketedString, IConstArgument
 {
     public float Const => @const;
 
-    public override string ToString() => $"[{@const}]";
+    public override string ToString() => ToString(true);
+    public string ToString(bool useBrackets) => useBrackets ? $"[{@const.ToString(CultureInfo.InvariantCulture)}]" : @const.ToString(CultureInfo.InvariantCulture);
 }

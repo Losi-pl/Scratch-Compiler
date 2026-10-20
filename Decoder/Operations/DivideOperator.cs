@@ -2,7 +2,7 @@
 
 namespace ScratchCompiler.Decoder.Operations;
 
-public class DivideOperator(FloatArgument a, FloatArgument b) : FloatArgument
+public class DivideOperator(FloatArgument a, FloatArgument b) : FloatArgument, IBracketedString
 {
     public const string ScratchCode = "operator_divide";
     private const string Null = "Null";
@@ -10,7 +10,8 @@ public class DivideOperator(FloatArgument a, FloatArgument b) : FloatArgument
     public FloatArgument A => a;
     public FloatArgument B => b;
 
-    public override string ToString() => $"({CustomNumerics(a)} / {CustomNumerics(b)})";
+    public override string ToString() => ToString(true);
+    public string ToString(bool useBrackets) => useBrackets ? $"({CustomNumerics(a)} / {CustomNumerics(b)})" : $"{CustomNumerics(a)} / {CustomNumerics(b)}";
 
     private static string CustomNumerics(FloatArgument arg) => arg switch
     {

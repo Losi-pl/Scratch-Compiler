@@ -2,7 +2,7 @@
 
 namespace ScratchCompiler.Decoder.Operations;
 
-public class ConstString(string @const) : Argument
+public class ConstString(string @const) : Argument, IConstArgument
 {
     public string Const => @const;
     
