@@ -78,7 +78,7 @@ public abstract class Target
         foreach (var block in blocks)
         {
             if (block.Value?["topLevel"]?.GetValue<bool>() ?? false)
-                codeBlocks.Add(new(blocks, (JsonObject)block.Value));
+                codeBlocks.Add(new(blocks, (JsonObject)block.Value, this));
         }
         _blocks = codeBlocks.ToFrozenSet();
         _jsonCode = null!;

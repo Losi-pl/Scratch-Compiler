@@ -10,7 +10,7 @@ public class CodeBlock
     private readonly CodeEntry _entry;
     private readonly ImmutableArray<Function> _functions;
 
-    internal CodeBlock(JsonObject json, JsonObject entry)
+    internal CodeBlock(JsonObject json, JsonObject entry, Target target)
     {
         _entry = CodeEntry.LoadEntry(entry, json);
         List<Function> functions = [];
@@ -21,7 +21,7 @@ public class CodeBlock
 
         while (current is not null)
         {
-            functions.Add(Function.LoadFunction(current, json));
+            functions.Add(Function.LoadFunction(current, json, target));
             current = Next(current);
         }
         

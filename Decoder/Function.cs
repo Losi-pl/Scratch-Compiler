@@ -12,7 +12,7 @@ namespace ScratchCompiler.Decoder;
 public abstract class Function
 {
 
-    public static Function LoadFunction(JsonObject json, JsonObject list)
+    public static Function LoadFunction(JsonObject json, JsonObject list, Target target)
     {
         var opcode = json["opcode"]?.GetValue<string>() ?? string.Empty;
         switch (opcode)
@@ -100,6 +100,15 @@ public abstract class Function
             }
             case NextBackground.ScratchCode:
                 return new NextBackground();
+            case SwitchCostume.ScratchNextCode:
+                return new SwitchCostume(SwitchCostume.RelativeMode.Next);
+            case SwitchCostume.ScratchCode:
+            {
+                var @ref = json.GetInputReference("COSTUME", list);
+                var dest = @ref.GetField("COSTUME");
+                var costume = target.Costumes.FirstOrDefault(c => c.Name == dest) ?? throw new KeyNotFoundException(dest);
+                return new SwitchCostume(costume);
+            }
             case BounceFromEdge.ScratchCode:
                 return new BounceFromEdge();
             case SetRotationStyle.ScratchCode:
