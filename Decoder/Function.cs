@@ -100,6 +100,13 @@ public abstract class Function
             }
             case NextBackground.ScratchCode:
                 return new NextBackground();
+            case BounceFromEdge.ScratchCode:
+                return new BounceFromEdge();
+            case SetRotationStyle.ScratchCode:
+            {
+                var style = json.GetField("STYLE");
+                return new SetRotationStyle(SetRotationStyle.ModesMap[style]);
+            }
             case SayFor.ScratchCode or ThinkFor.ScratchCode:
             {
                 var text = json.GetGeneralInput(list, "MESSAGE");
