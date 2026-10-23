@@ -100,6 +100,12 @@ public abstract class Function
             }
             case NextBackground.ScratchCode:
                 return new NextBackground();
+            case SayFor.ScratchCode or ThinkFor.ScratchCode:
+            {
+                var text = json.GetGeneralInput(list, "MESSAGE");
+                var time = json.GetFloatInput(list, "SECS");
+                return opcode == SayFor.ScratchCode ? new SayFor(text, time) : new ThinkFor(text, time);
+            }
             default:
                 return new UnknownFunction(json);
         }
