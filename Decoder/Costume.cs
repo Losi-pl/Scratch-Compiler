@@ -14,17 +14,18 @@ public class Costume
         {
             "svg" => CostumeFormat.SVG,
             "png" => CostumeFormat.PNG,
+            "jpg" => CostumeFormat.JPG,
             _ => throw new ArgumentException($"Unknown data format: {json["dataFormat"]?.GetValue<string>()}"),
         };
         AssetID = json["assetId"]?.GetValue<string>() ?? string.Empty;
         Resolution = json["bitmapResolution"]?.GetValue<int>() ?? 1;
         _source = (Project.Current.archive, json["md5ext"]?.GetValue<string>() ?? string.Empty);
-        RotationCenter = (json["rotationCenterX"]?.GetValue<int>() ?? 0, json["rotationCenterY"]?.GetValue<int>() ?? 0);
+        RotationCenter = (json["rotationCenterX"]?.GetValue<float>() ?? 0, json["rotationCenterY"]?.GetValue<float>() ?? 0);
     }
     
     public string Name { get; }
 
-    public (int x, int y) RotationCenter { get; }
+    public (float x, float y) RotationCenter { get; }
 
     public CostumeFormat FileFormat { get; }
 
@@ -37,5 +38,5 @@ public class Costume
 }
 
 // ReSharper disable InconsistentNaming
-public enum CostumeFormat : byte { SVG, PNG }
+public enum CostumeFormat : byte { SVG, PNG, JPG }
 // ReSharper restore InconsistentNaming

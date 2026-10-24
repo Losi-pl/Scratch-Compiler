@@ -98,8 +98,23 @@ public abstract class Function
                 var text = json.GetStringInput(list, "MESSAGE");
                 return opcode == Say.ScratchCode ? new Say(text) : new Think(text);
             }
-            case NextBackground.ScratchCode:
-                return new NextBackground();
+            case SwitchBackground.ScratchNextCode:
+                return new SwitchBackground(SwitchBackground.Relative.Next);
+            case SwitchBackground.ScratchCode:
+            {
+                var @ref = json.GetInputReference("BACKDROP", list);
+                var dest = @ref.GetField("BACKDROP");
+                var background = Project.Current.project.Scene.Costumes.FirstOrDefault(b => b.Name == dest);
+                if (background is not null)
+                    return new SwitchBackground(background);
+                return new SwitchBackground(dest switch
+                {
+                    "next backdrop" => SwitchBackground.Relative.Next,
+                    "previous backdrop" => SwitchBackground.Relative.Previous,
+                    "random backdrop" => SwitchBackground.Relative.Random,
+                    _ => throw new NotSupportedException($"Unknown background {{{dest}}}")
+                });
+            }
             case SwitchCostume.ScratchNextCode:
                 return new SwitchCostume(SwitchCostume.RelativeMode.Next);
             case SwitchCostume.ScratchCode:
