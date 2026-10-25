@@ -5,6 +5,7 @@ using ScratchCompiler.Decoder.Functions;
 using ScratchCompiler.Decoder.Functions.Looks;
 using ScratchCompiler.Decoder.Functions.Motion;
 using ScratchCompiler.Decoder.Functions.Data;
+using ScratchCompiler.Decoder.Functions.Sound;
 using ScratchCompiler.Decoder.Operations;
 
 namespace ScratchCompiler.Decoder;
@@ -159,6 +160,20 @@ public abstract class Function
                 var destination = json.GetField("FRONT_BACK");
                 return new MoveToLayer(MoveToLayer.DestinationMap[destination]);
             }
+            case PlayUntilDone.ScratchCode:
+            {
+                var @ref = json.GetInputReference("SOUND_MENU", list);
+                var name = @ref.GetField("SOUND_MENU");
+                var sound = target.Sounds.FirstOrDefault(c => c.Name == name) ?? throw new KeyNotFoundException(name);
+                return new PlayUntilDone(sound);
+            }
+            case StartPlaying.ScratchCode:
+            {
+                var @ref = json.GetInputReference("SOUND_MENU", list);
+                var name = @ref.GetField("SOUND_MENU");
+                var sound = target.Sounds.FirstOrDefault(c => c.Name == name) ?? throw new KeyNotFoundException(name);
+                return new StartPlaying(sound);
+            }
             case ShowHide.ScratchShowCode or ShowHide.ScratchHideCode:
                 return new ShowHide(opcode == ShowHide.ScratchShowCode);
             case SwitchCostume.ScratchNextCode:
@@ -167,6 +182,8 @@ public abstract class Function
                 return BounceFromEdge.Instance;
             case ClearEffects.ScratchCode:
                 return ClearEffects.Instance;
+            case StopPlaying.ScratchCode:
+                return StopPlaying.Instance;
             default:
                 return new UnknownFunction(json);
         }
