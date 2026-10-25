@@ -115,8 +115,6 @@ public abstract class Function
                     _ => throw new NotSupportedException($"Unknown background {{{dest}}}")
                 });
             }
-            case SwitchCostume.ScratchNextCode:
-                return new SwitchCostume(SwitchCostume.RelativeMode.Next);
             case SwitchCostume.ScratchCode:
             {
                 var @ref = json.GetInputReference("COSTUME", list);
@@ -147,8 +145,16 @@ public abstract class Function
                 var time = json.GetFloatInput(list, "SECS");
                 return opcode == SayFor.ScratchCode ? new SayFor(text, time) : new ThinkFor(text, time);
             }
+            case MoveLayers.ScratchCode:
+            {
+                var direction = json.GetField("FORWARD_BACKWARD");
+                var move = json.GetIntInput(list, "NUM");
+                return new MoveLayers(MoveLayers.DirectionMap[direction], move);
+            }
             case ShowHide.ScratchShowCode or ShowHide.ScratchHideCode:
                 return new ShowHide(opcode == ShowHide.ScratchShowCode);
+            case SwitchCostume.ScratchNextCode:
+                return new SwitchCostume(SwitchCostume.RelativeMode.Next);
             case BounceFromEdge.ScratchCode:
                 return BounceFromEdge.Instance;
             case ClearEffects.ScratchCode:
@@ -222,6 +228,42 @@ internal static class ArgHelper
                     var @ref = json["inputs"]?[key]?[1]?[2]?.GetValue<string>();
                     var var = Project.Current.project.Variables.FindByScratchCode(@ref!);
                     return new GetFloat(var ?? throw new KeyNotFoundException());
+                }
+                
+                throw new KeyNotFoundException();
+            }
+            default:
+                throw new NotSupportedException("Unknown input type");
+        }
+    }
+    public static IntArgument GetIntInput(this JsonObject json, JsonObject list, string key)
+    {
+        switch (json["inputs"]?[key]?[0]!.GetValue<int>())
+        {
+            case 1:
+            {
+                var str = json["inputs"]?[key]?[1]?[1]?.GetValue<string>();
+                var @int = int.TryParse(str, out var i) ? i : 0;
+                return new ConstInt(@int);
+            }
+                
+            case 3:
+            {
+                if (json["inputs"]?[key]?[1]?.GetValueKind() == JsonValueKind.String)
+                {
+                    var @ref = json["inputs"]?[key]?[1]?.GetValue<string>() ?? string.Empty;
+                    var arg = list[@ref]!.AsObject();
+                    return IntArgument.Parse(arg, list) ?? 
+                           new UnknownIntArgument(
+                               arg["opcode"]?.GetValue<string>() ?? string.Empty,
+                               int.TryParse(json["inputs"]?[key]?[2]?[1]?.GetValue<string>() ?? string.Empty, 
+                                   NumberStyles.Float, CultureInfo.InvariantCulture, out var i) ? i : 0);
+                }
+                if (json["inputs"]?[key]?[1]?[0]?.GetValue<int>() == 12)
+                {
+                    var @ref = json["inputs"]?[key]?[1]?[2]?.GetValue<string>();
+                    var var = Project.Current.project.Variables.FindByScratchCode(@ref!);
+                    return new GetInt(var ?? throw new KeyNotFoundException());
                 }
                 
                 throw new KeyNotFoundException();

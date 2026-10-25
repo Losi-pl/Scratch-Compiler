@@ -23,7 +23,7 @@ public abstract class Argument
                     _ => throw new NotSupportedException()
                 };
             }
-            case CostumeData.ScratchBackGroundCode:
+            case CostumeData.ScratchBackgroundCode:
             {
                 var source = json.GetField("NUMBER_NAME");
                 return source switch
@@ -120,5 +120,17 @@ public abstract class FloatArgument : Argument
 }
 public abstract class IntArgument : FloatArgument
 {
-    
+    public new static IntArgument? Parse(JsonObject json, JsonObject list)
+    {
+        var opcode = json["opcode"]!.GetValue<string>();
+        switch (opcode)
+        {
+            case CostumeData.ScratchBackgroundCode or CostumeData.ScratchCostumeCode:
+            {
+                var rez = Argument.Parse(json, list);
+                return rez as IntArgument ?? throw new InvalidOperationException();
+            }
+        }
+        return null;
+    }
 }

@@ -1,6 +1,6 @@
 ﻿namespace ScratchCompiler.Decoder.Operations;
 
-public class ConstInt(int @const) : FloatArgument, IConstArgument
+public class ConstInt(int @const) : IntArgument, IConstArgument
 {
     public int Const => @const;
 

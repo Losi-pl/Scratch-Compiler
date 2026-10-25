@@ -3,5 +3,5 @@
 public static class CostumeData
 {
     public const string ScratchCostumeCode = "looks_costumenumbername";
-    public const string ScratchBackGroundCode = "looks_backdropnumbername";
+    public const string ScratchBackgroundCode = "looks_backdropnumbername";
 }
