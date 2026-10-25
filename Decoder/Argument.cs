@@ -12,7 +12,28 @@ public abstract class Argument
         {
             case GetString.ScratchCode:
                 return new GetString(GetString.SystemSources.Username);
-            
+            case CostumeData.ScratchCostumeCode:
+            {
+                var source = json.GetField("NUMBER_NAME");
+                return source switch
+                {
+                    "number" => new GetInt(GetInt.SystemSources.CostumeNumber),
+                    "name" => new GetString(GetString.SystemSources.CostumeName),
+
+                    _ => throw new NotSupportedException()
+                };
+            }
+            case CostumeData.ScratchBackGroundCode:
+            {
+                var source = json.GetField("NUMBER_NAME");
+                return source switch
+                {
+                    "number" => new GetInt(GetInt.SystemSources.BackgroundNumber),
+                    "name" => new GetString(GetString.SystemSources.BackgroundName),
+
+                    _ => throw new NotSupportedException()
+                };
+            }
         }
         if(LogicArgument.Parse(json, list) is { } bArg)
             return bArg;

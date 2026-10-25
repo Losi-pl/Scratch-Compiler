@@ -20,7 +20,11 @@ public class GetString : Argument
     
     public override string ToString() => $"{{{
         _source switch {
-            { IsT0: true, AsT0: var t } => "Sys: " + t.Humanize(LetterCasing.Title),
+            { IsT0: true, AsT0: var t } => t switch {
+                SystemSources.CostumeName => "Costume: Name",
+                SystemSources.BackgroundName => "Background: Name",
+                _ => "Sys: " + t.Humanize(LetterCasing.Title)
+            },
             { IsT1: true, AsT1: var t } => t.Name,
             _ => throw new InvalidOperationException()
         }
@@ -28,7 +32,7 @@ public class GetString : Argument
     
     public enum SystemSources : byte
     {
-        Username
+        Username, CostumeName, BackgroundName,
     }
 
 }
