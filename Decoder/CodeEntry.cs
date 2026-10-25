@@ -14,7 +14,8 @@ public abstract class CodeEntry
         OnKeyPress.ScratchCode, 
         OnBackgroundChangedTo.ScratchCode, 
         OnGraterThan.ScratchCode, 
-        OnBroadcast.ScratchCode
+        OnBroadcast.ScratchCode,
+        OnCloneCreated.ScratchCode
     ];
 
     internal static CodeEntry LoadEntry(JsonObject json, JsonObject list)
@@ -31,6 +32,9 @@ public abstract class CodeEntry
                 
                 case OnStageClick.ScratchCode:
                     return new OnStageClick();
+                
+                case OnCloneCreated.ScratchCode:
+                    return new OnCloneCreated();
                 
                 case OnBackgroundChangedTo.ScratchCode:
                 {
@@ -70,6 +74,7 @@ public abstract class CodeEntry
                         
                     return new OnGraterThan(source, threshold);
                 }
+                
                 case OnBroadcast.ScratchCode:
                 {
                     var code = json["fields"]?["BROADCAST_OPTION"]?[1]?.GetValue<string>() ?? string.Empty;
