@@ -65,7 +65,7 @@ public abstract class FloatArgument : Argument
         var opcode = json["opcode"]!.GetValue<string>();
         switch (opcode)
         {
-            case GetFloat.ScratchXPosCode or GetFloat.ScratchYPosCode or GetFloat.ScratchRotationCode:
+            case GetFloat.ScratchXPosCode or GetFloat.ScratchYPosCode or GetFloat.ScratchRotationCode or GetFloat.ScratchSizeCode:
                 return new GetFloat(GetFloat.SystemSourcesMap[opcode]);
             case AddOperator.ScratchCode:
             {

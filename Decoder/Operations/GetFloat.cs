@@ -9,6 +9,7 @@ public class GetFloat : FloatArgument
     public const string ScratchXPosCode = "motion_xposition";
     public const string ScratchYPosCode = "motion_yposition";
     public const string ScratchRotationCode = "motion_direction";
+    public const string ScratchSizeCode = "looks_size";
     
     public static readonly FrozenDictionary<string, SystemSources> SystemSourcesMap = 
         new Dictionary<string, SystemSources>
@@ -16,9 +17,10 @@ public class GetFloat : FloatArgument
             { ScratchXPosCode, SystemSources.XPosition },
             { ScratchYPosCode, SystemSources.YPosition },
             { ScratchRotationCode, SystemSources.Rotation },
+            { ScratchSizeCode, SystemSources.Size },
         }.ToFrozenDictionary();
     
-    private OneOf<SystemSources, Variable> _source;
+    private readonly OneOf<SystemSources, Variable> _source;
     
     public GetFloat(SystemSources source) => _source = source;
     public GetFloat(Variable source) => _source = source;
@@ -42,6 +44,7 @@ public class GetFloat : FloatArgument
         XPosition,
         YPosition,
         Rotation,
+        Size
     }
 
 }
