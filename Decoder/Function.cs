@@ -137,6 +137,10 @@ public abstract class Function
                 var time = json.GetFloatInput(list, "SECS");
                 return opcode == SayFor.ScratchCode ? new SayFor(text, time) : new ThinkFor(text, time);
             }
+            case BounceFromEdge.ScratchCode:
+                return BounceFromEdge.Instance;
+            case ClearEffects.ScratchCode:
+                return ClearEffects.Instance;
             default:
                 return new UnknownFunction(json);
         }
