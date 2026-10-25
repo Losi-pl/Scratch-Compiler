@@ -97,6 +97,28 @@ public abstract class Function
                 var variable = Project.Current.project.Variables.FindByScratchCode(@ref);
                 return new ChangeVariable(variable ?? throw new KeyNotFoundException(), json.GetGeneralInput(list, "VALUE"));
             }
+            case ChangeVariable.ScratchSoundCode:
+            {
+                var dest = json.GetField("EFFECT");
+                var value = json.GetFloatInput(list, "VALUE");
+                return new ChangeVariable(dest switch
+                    {
+                        "PITCH" => SetVariable.SysVariables.Pitch,
+                        "PAN" => SetVariable.SysVariables.PanStereo,
+                        _ => throw new NotSupportedException($"Unknown value type \"{dest}\"")
+                    }, value);
+            }
+            case SetVariable.ScratchSoundCode:
+            {
+                var dest = json.GetField("EFFECT");
+                var value = json.GetFloatInput(list, "VALUE");
+                return new SetVariable(dest switch
+                {
+                    "PITCH" => SetVariable.SysVariables.Pitch,
+                    "PAN" => SetVariable.SysVariables.PanStereo,
+                    _ => throw new NotSupportedException($"Unknown value type \"{dest}\"")
+                }, value);
+            }
             case Say.ScratchCode or Think.ScratchCode:
             {
                 var text = json.GetStringInput(list, "MESSAGE");
@@ -126,13 +148,13 @@ public abstract class Function
                 var costume = target.Costumes.FirstOrDefault(c => c.Name == dest) ?? throw new KeyNotFoundException(dest);
                 return new SwitchCostume(costume);
             }
-            case ChangeVariable.ScratchEffectsCode:
+            case ChangeVariable.ScratchGraphicCode:
             {
                 var effect = json.GetField("EFFECT");
                 var change = json.GetGeneralInput(list, "CHANGE");
                 return new ChangeVariable(SetVariable.GraphicEffects[effect], change);
             }
-            case SetVariable.ScratchEffectCode:
+            case SetVariable.ScratchGraphicCode:
             {
                 var effect = json.GetField("EFFECT");
                 var value = json.GetGeneralInput(list, "VALUE");
@@ -180,10 +202,12 @@ public abstract class Function
                 return new SwitchCostume(SwitchCostume.RelativeMode.Next);
             case BounceFromEdge.ScratchCode:
                 return BounceFromEdge.Instance;
-            case ClearEffects.ScratchCode:
-                return ClearEffects.Instance;
+            case ClearGraphicEffects.ScratchCode:
+                return ClearGraphicEffects.Instance;
             case StopPlaying.ScratchCode:
                 return StopPlaying.Instance;
+            case ClearSoundEffects.ScratchCode:
+                return ClearSoundEffects.Instance;
             default:
                 return new UnknownFunction(json);
         }
@@ -374,6 +398,7 @@ internal static class ArgHelper
             SetVariable.SysVariables.Whirl or SetVariable.SysVariables.Pixelate or 
             SetVariable.SysVariables.Mosaic or SetVariable.SysVariables.Brightness or 
             SetVariable.SysVariables.Ghost => "Graphic",
+        SetVariable.SysVariables.Pitch or SetVariable.SysVariables.PanStereo => "Sound",
         _ => "System"
     };
 }

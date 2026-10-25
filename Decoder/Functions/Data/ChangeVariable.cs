@@ -14,7 +14,8 @@ public class ChangeVariable : Function
     public const string ScratchSizeCode = "looks_changesizeby";
     public const string ScratchVolumeCode = "sound_changevolumeby";
 
-    public const string ScratchEffectsCode = "looks_changeeffectby";
+    public const string ScratchGraphicCode = "looks_changeeffectby";
+    public const string ScratchSoundCode = "sound_changeeffectby";
 
     public static readonly FrozenDictionary<string, (string Value, SysVariables Type)> SystemVariables =
         new KeyValuePair<string, (string Value, SysVariables Type)>[] {

@@ -14,7 +14,8 @@ public class SetVariable : Function
     public const string ScratchSizeCode = "looks_setsizeto";
     public const string ScratchVolumeCode = "sound_setvolumeto";
     
-    public const string ScratchEffectCode = "looks_seteffectto";
+    public const string ScratchGraphicCode = "looks_seteffectto";
+    public const string ScratchSoundCode = "sound_seteffectto";
 
     public static readonly FrozenDictionary<string, (string Value, SysVariables Type)> SystemVariables =
         new KeyValuePair<string, (string Value, SysVariables Type)>[] {
@@ -55,5 +56,6 @@ public class SetVariable : Function
     {
         XPosition, YPosition, Rotation, Size, Volume,                  // Standard
         Color, Fisheye, Whirl, Pixelate, Mosaic, Brightness, Ghost,    // Graphic Effects
+        Pitch, PanStereo                                               // Sound Effects
     }
 }
