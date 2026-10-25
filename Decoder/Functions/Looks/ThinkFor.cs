@@ -7,5 +7,5 @@ public class ThinkFor(Argument text, FloatArgument time) : Function
     public Argument Text => text;
     public FloatArgument Time => time;
     
-    public override string ToString() => $"Think {text} for {time} secs";
+    public override string ToString() => $"Think {text} for {time} secs;";
 }

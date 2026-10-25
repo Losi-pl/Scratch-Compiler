@@ -16,7 +16,7 @@ public class SetRotationStyle(SetRotationStyle.Modes mode) : Function
             ["all around"] = Modes.Free,
         }.ToFrozenDictionary();
 
-    public override string ToString() => $"Set rotation style to {{{mode.Humanize(LetterCasing.Title)}}}";
+    public override string ToString() => $"Set rotation style to {{{mode.Humanize(LetterCasing.Title)}}};";
 
     public enum Modes : byte { Free, LeftRight, Locked }
 }
