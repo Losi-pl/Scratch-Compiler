@@ -12,6 +12,8 @@ public class SetVariable : Function
     public const string ScratchSetYCode = "motion_sety";
     public const string ScratchRotationCode = "motion_pointindirection";
     public const string ScratchSizeCode = "looks_setsizeto";
+    public const string ScratchVolumeCode = "sound_setvolumeto";
+    
     public const string ScratchEffectCode = "looks_seteffectto";
 
     public static readonly FrozenDictionary<string, (string Value, SysVariables Type)> SystemVariables =
@@ -20,6 +22,7 @@ public class SetVariable : Function
             new(ScratchSetXCode,     ("X", SysVariables.XPosition)),
             new(ScratchSetYCode,     ("Y", SysVariables.YPosition)),
             new(ScratchSizeCode,     ("SIZE", SysVariables.Size)),
+            new(ScratchVolumeCode,   ("VOLUME", SysVariables.Volume)),
         }.ToFrozenDictionary();
 
     public static readonly FrozenDictionary<string, SysVariables> GraphicEffects =
@@ -50,7 +53,7 @@ public class SetVariable : Function
     
     public enum SysVariables : byte
     {
-        XPosition = 0, YPosition = 1, Rotation = 2, Size = 3,                                       // Standard
-        Color = 4, Fisheye = 5, Whirl = 6, Pixelate = 7, Mosaic = 8, Brightness = 9, Ghost = 10,    // Graphic Effects
+        XPosition, YPosition, Rotation, Size, Volume,                  // Standard
+        Color, Fisheye, Whirl, Pixelate, Mosaic, Brightness, Ghost,    // Graphic Effects
     }
 }

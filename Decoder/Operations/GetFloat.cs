@@ -10,14 +10,16 @@ public class GetFloat : FloatArgument
     public const string ScratchYPosCode = "motion_yposition";
     public const string ScratchRotationCode = "motion_direction";
     public const string ScratchSizeCode = "looks_size";
+    public const string ScratchVolumeCode = "sound_volume";
     
     public static readonly FrozenDictionary<string, SystemSources> SystemSourcesMap = 
         new Dictionary<string, SystemSources>
         {
-            { ScratchXPosCode, SystemSources.XPosition },
-            { ScratchYPosCode, SystemSources.YPosition },
+            { ScratchXPosCode,     SystemSources.XPosition },
+            { ScratchYPosCode,     SystemSources.YPosition },
             { ScratchRotationCode, SystemSources.Rotation },
-            { ScratchSizeCode, SystemSources.Size },
+            { ScratchSizeCode,     SystemSources.Size },
+            { ScratchVolumeCode,   SystemSources.Volume },
         }.ToFrozenDictionary();
     
     private readonly OneOf<SystemSources, Variable> _source;
@@ -33,7 +35,7 @@ public class GetFloat : FloatArgument
     
     public override string ToString() => $"{{{
         _source switch {
-            { IsT0: true, AsT0: var t } => "Sys: " + t.Humanize(LetterCasing.Title),
+            { IsT0: true, AsT0: var t } => "System: " + t.Humanize(LetterCasing.Title),
             { IsT1: true, AsT1: var t } => t.Name,
             _ => throw new InvalidOperationException()
         }
@@ -44,7 +46,8 @@ public class GetFloat : FloatArgument
         XPosition,
         YPosition,
         Rotation,
-        Size
+        Volume,
+        Size,
     }
 
 }
