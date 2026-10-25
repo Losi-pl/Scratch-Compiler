@@ -147,6 +147,8 @@ public abstract class Function
                 var time = json.GetFloatInput(list, "SECS");
                 return opcode == SayFor.ScratchCode ? new SayFor(text, time) : new ThinkFor(text, time);
             }
+            case ShowHide.ScratchShowCode or ShowHide.ScratchHideCode:
+                return new ShowHide(opcode == ShowHide.ScratchShowCode);
             case BounceFromEdge.ScratchCode:
                 return BounceFromEdge.Instance;
             case ClearEffects.ScratchCode:
