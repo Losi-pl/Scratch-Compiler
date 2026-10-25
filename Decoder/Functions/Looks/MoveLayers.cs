@@ -14,6 +14,9 @@ public class MoveLayers(MoveLayers.Direction direction, IntArgument layers) : Fu
             ["backward"] = Direction.Backward,
         }.ToFrozenDictionary();
 
+    public Direction InDirection => direction;
+    public IntArgument Layers => layers;
+    
     public override string ToString() => $"Move {direction.Humanize(LetterCasing.LowerCase)} {layers} layers;";
 
     public enum Direction : byte

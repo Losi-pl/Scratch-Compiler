@@ -151,6 +151,11 @@ public abstract class Function
                 var move = json.GetIntInput(list, "NUM");
                 return new MoveLayers(MoveLayers.DirectionMap[direction], move);
             }
+            case MoveToLayer.ScratchCode:
+            {
+                var destination = json.GetField("FRONT_BACK");
+                return new MoveToLayer(MoveToLayer.DestinationMap[destination]);
+            }
             case ShowHide.ScratchShowCode or ShowHide.ScratchHideCode:
                 return new ShowHide(opcode == ShowHide.ScratchShowCode);
             case SwitchCostume.ScratchNextCode:
