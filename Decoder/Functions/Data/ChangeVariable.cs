@@ -13,6 +13,8 @@ public class ChangeVariable : Function
     public const string ScratchYCode = "motion_changeyby";
     public const string ScratchSizeCode = "looks_changesizeby";
 
+    public const string ScratchEffectsCode = "looks_changeeffectby";
+
     public static readonly FrozenDictionary<string, (string Value, SysVariables Type)> SystemVariables =
         new KeyValuePair<string, (string Value, SysVariables Type)>[] {
             new(ScratchXCode,     ("DX", SysVariables.XPosition)),
@@ -28,7 +30,7 @@ public class ChangeVariable : Function
 
     public override string ToString() => $"Change {{{
         _destination switch {
-            {IsT0:true, AsT0: var t} => "System: " + t.Humanize(LetterCasing.Title),
+            {IsT0:true, AsT0: var t} => $"{t.ToSystemMarker()}: {t.Humanize(LetterCasing.Title)}",
             {IsT1:true, AsT1: var t} => t.Name,
             _ => throw new InvalidOperationException()
         }

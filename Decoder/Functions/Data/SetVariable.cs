@@ -12,6 +12,7 @@ public class SetVariable : Function
     public const string ScratchSetYCode = "motion_sety";
     public const string ScratchRotationCode = "motion_pointindirection";
     public const string ScratchSizeCode = "looks_setsizeto";
+    public const string ScratchEffectCode = "looks_seteffectto";
 
     public static readonly FrozenDictionary<string, (string Value, SysVariables Type)> SystemVariables =
         new KeyValuePair<string, (string Value, SysVariables Type)>[] {
@@ -19,6 +20,18 @@ public class SetVariable : Function
             new(ScratchSetXCode,     ("X", SysVariables.XPosition)),
             new(ScratchSetYCode,     ("Y", SysVariables.YPosition)),
             new(ScratchSizeCode,     ("SIZE", SysVariables.Size)),
+        }.ToFrozenDictionary();
+
+    public static readonly FrozenDictionary<string, SysVariables> GraphicEffects =
+        new KeyValuePair<string, SysVariables>[]
+        {
+            new("Color".ToUpper(), SysVariables.Color),
+            new("Fisheye".ToUpper(), SysVariables.Fisheye),
+            new("Whirl".ToUpper(), SysVariables.Whirl),
+            new("Pixelate".ToUpper(), SysVariables.Pixelate),
+            new("Mosaic".ToUpper(), SysVariables.Mosaic),
+            new("Brightness".ToUpper(), SysVariables.Brightness),
+            new("Ghost".ToUpper(), SysVariables.Ghost),
         }.ToFrozenDictionary();
     
     private readonly OneOf<SysVariables, Variable> _destination;
@@ -29,7 +42,7 @@ public class SetVariable : Function
 
     public override string ToString() => $"Set {{{
         _destination switch {
-            {IsT0:true, AsT0: var t} => "System: " + t.Humanize(LetterCasing.Title),
+            {IsT0:true, AsT0: var t} => $"{t.ToSystemMarker()}: {t.Humanize(LetterCasing.Title)}",
             {IsT1:true, AsT1: var t} => t.Name,
             _ => throw new InvalidOperationException()
         }
@@ -37,6 +50,7 @@ public class SetVariable : Function
     
     public enum SysVariables : byte
     {
-        XPosition, YPosition, Rotation, Size
+        XPosition = 0, YPosition = 1, Rotation = 2, Size = 3,                                       // Standard
+        Color = 4, Fisheye = 5, Whirl = 6, Pixelate = 7, Mosaic = 8, Brightness = 9, Ghost = 10,    // Graphic Effects
     }
 }

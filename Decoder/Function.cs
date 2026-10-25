@@ -124,8 +124,18 @@ public abstract class Function
                 var costume = target.Costumes.FirstOrDefault(c => c.Name == dest) ?? throw new KeyNotFoundException(dest);
                 return new SwitchCostume(costume);
             }
-            case BounceFromEdge.ScratchCode:
-                return new BounceFromEdge();
+            case ChangeVariable.ScratchEffectsCode:
+            {
+                var effect = json.GetField("EFFECT");
+                var change = json.GetGeneralInput(list, "CHANGE");
+                return new ChangeVariable(SetVariable.GraphicEffects[effect], change);
+            }
+            case SetVariable.ScratchEffectCode:
+            {
+                var effect = json.GetField("EFFECT");
+                var value = json.GetGeneralInput(list, "VALUE");
+                return new SetVariable(SetVariable.GraphicEffects[effect], value);
+            }
             case SetRotationStyle.ScratchCode:
             {
                 var style = json.GetField("STYLE");
@@ -218,7 +228,6 @@ internal static class ArgHelper
                 throw new NotSupportedException("Unknown input type");
         }
     }
-
     public static Argument GetGeneralInput(this JsonObject json, JsonObject list, string key)
     {
         switch (json["inputs"]?[key]?[0]!.GetValue<int>())
@@ -284,10 +293,18 @@ internal static class ArgHelper
         }
         return null!;
     }
-    
     public static JsonObject GetInputReference(this JsonObject json, string key, JsonObject list)
     {
         var code = json["inputs"]?[key]?[1]?.GetValue<string>();
         return list[code!]!.AsObject();
     }
+
+    public static string ToSystemMarker(this SetVariable.SysVariables variable) => variable switch
+    {
+        SetVariable.SysVariables.Color or SetVariable.SysVariables.Fisheye or 
+            SetVariable.SysVariables.Whirl or SetVariable.SysVariables.Pixelate or 
+            SetVariable.SysVariables.Mosaic or SetVariable.SysVariables.Brightness or 
+            SetVariable.SysVariables.Ghost => "Graphic",
+        _ => "System"
+    };
 }
