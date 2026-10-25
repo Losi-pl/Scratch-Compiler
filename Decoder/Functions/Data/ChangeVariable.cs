@@ -11,11 +11,13 @@ public class ChangeVariable : Function
     
     public const string ScratchXCode = "motion_changexby";
     public const string ScratchYCode = "motion_changeyby";
+    public const string ScratchSizeCode = "looks_changesizeby";
 
     public static readonly FrozenDictionary<string, (string Value, SysVariables Type)> SystemVariables =
         new KeyValuePair<string, (string Value, SysVariables Type)>[] {
             new(ScratchXCode,     ("DX", SysVariables.XPosition)),
             new(ScratchYCode,     ("DY", SysVariables.YPosition)),
+            new(ScratchSizeCode,  ("CHANGE", SysVariables.Size))
         }.ToFrozenDictionary();
     
     private readonly OneOf<SysVariables, Variable> _destination;

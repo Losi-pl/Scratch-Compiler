@@ -71,7 +71,7 @@ public abstract class Function
                     throw new InvalidCastException();
                 return new PointTowards();
             }
-            case SetVariable.ScratchSetXCode or SetVariable.ScratchSetYCode or SetVariable.ScratchRotationCode:
+            case SetVariable.ScratchSetXCode or SetVariable.ScratchSetYCode or SetVariable.ScratchRotationCode or SetVariable.ScratchSizeCode:
             {
                 var value = json.GetGeneralInput(list, SetVariable.SystemVariables[opcode].Value);
                 return new SetVariable(SetVariable.SystemVariables[opcode].Type, value);
@@ -82,7 +82,7 @@ public abstract class Function
                 var variable = Project.Current.project.Variables.FindByScratchCode(@ref);
                 return new SetVariable(variable ?? throw new KeyNotFoundException(), json.GetGeneralInput(list, "VALUE"));
             }
-            case ChangeVariable.ScratchXCode or ChangeVariable.ScratchYCode:
+            case ChangeVariable.ScratchXCode or ChangeVariable.ScratchYCode or ChangeVariable.ScratchSizeCode:
             {
                 var value = json.GetGeneralInput(list, ChangeVariable.SystemVariables[opcode].Value);
                 return new ChangeVariable(ChangeVariable.SystemVariables[opcode].Type, value);

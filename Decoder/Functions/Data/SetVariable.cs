@@ -11,12 +11,14 @@ public class SetVariable : Function
     public const string ScratchSetXCode = "motion_setx";
     public const string ScratchSetYCode = "motion_sety";
     public const string ScratchRotationCode = "motion_pointindirection";
+    public const string ScratchSizeCode = "looks_setsizeto";
 
     public static readonly FrozenDictionary<string, (string Value, SysVariables Type)> SystemVariables =
         new KeyValuePair<string, (string Value, SysVariables Type)>[] {
             new(ScratchRotationCode, ("DIRECTION", SysVariables.Rotation)),
             new(ScratchSetXCode,     ("X", SysVariables.XPosition)),
             new(ScratchSetYCode,     ("Y", SysVariables.YPosition)),
+            new(ScratchSizeCode,     ("SIZE", SysVariables.Size)),
         }.ToFrozenDictionary();
     
     private readonly OneOf<SysVariables, Variable> _destination;
@@ -35,6 +37,6 @@ public class SetVariable : Function
     
     public enum SysVariables : byte
     {
-        XPosition, YPosition, Rotation
+        XPosition, YPosition, Rotation, Size
     }
 }
