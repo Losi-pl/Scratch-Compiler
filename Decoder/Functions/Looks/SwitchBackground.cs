@@ -16,7 +16,7 @@ public class SwitchBackground(OneOf<SwitchBackground.Relative, Costume> destinat
     public override string ToString() => destination switch
     {
         { IsT0: true, AsT0: var t} => $"{t} background;",
-        { IsT1: true, AsT1: var t } => $"Swich bacground to {{{t.Name}}};",
+        { IsT1: true, AsT1: var t } => $"Switch background to {{{t.Name}}};",
         _ => throw new InvalidOperationException()
     };
 
