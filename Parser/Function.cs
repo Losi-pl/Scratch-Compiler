@@ -247,6 +247,10 @@ public abstract class Function
                 return StopPlaying.Instance;
             case ClearSoundEffects.ScratchCode:
                 return ClearSoundEffects.Instance;
+            case DestroyClone.ScratchCode:
+                return DestroyClone.Instance;
+            case CloneMyself.ScratchCode:
+                return CloneMyself.Instance;
             default:
                 return new UnknownFunction(json);
         }
