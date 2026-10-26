@@ -5,6 +5,7 @@ using ScratchCompiler.Decoder.Functions;
 using ScratchCompiler.Decoder.Functions.Looks;
 using ScratchCompiler.Decoder.Functions.Motion;
 using ScratchCompiler.Decoder.Functions.Data;
+using ScratchCompiler.Decoder.Functions.Events;
 using ScratchCompiler.Decoder.Functions.Sound;
 using ScratchCompiler.Decoder.Operations;
 
@@ -195,6 +196,14 @@ public abstract class Function
                 var name = @ref.GetField("SOUND_MENU");
                 var sound = target.Sounds.FirstOrDefault(c => c.Name == name) ?? throw new KeyNotFoundException(name);
                 return new StartPlaying(sound);
+            }
+            case SendBroadcast.ScratchCode:
+            {
+                var code = json["fields"]?["BROADCAST_OPTION"]?[1]?.GetValue<string>() ?? string.Empty;
+                var br = Project.Current.project.Broadcasts.FindByScratchCode(code);
+                if(br is null)
+                    throw new NullReferenceException($"Broadcast \"{code}\" not found");
+                return new SendBroadcast(br);
             }
             case ShowHide.ScratchShowCode or ShowHide.ScratchHideCode:
                 return new ShowHide(opcode == ShowHide.ScratchShowCode);
