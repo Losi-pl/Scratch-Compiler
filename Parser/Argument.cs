@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Nodes;
 using ScratchCompiler.Parser.Operations;
+using ScratchCompiler.Parser.Operations.Sensing;
 
 namespace ScratchCompiler.Parser;
 
@@ -35,10 +36,10 @@ public abstract class Argument
                 };
             }
         }
-        if(LogicArgument.Parse(json, list) is { } bArg)
-            return bArg;
         if(FloatArgument.Parse(json, list) is { } fArg)
             return fArg;
+        if(LogicArgument.Parse(json, list) is { } bArg)
+            return bArg;
         return null;
     }
 }
@@ -52,6 +53,18 @@ public abstract class LogicArgument : Argument
         {
             case GetBool.ScratchOnlineCode:
                 return new GetBool(GetBool.SystemSourcesMap[opcode]);
+            case IsTouching.ScratchCode:
+            {
+                // ReSharper disable StringLiteralTypo
+                var target = json.GetInputReference("TOUCHINGOBJECTMENU", list).GetField("TOUCHINGOBJECTMENU");
+                // ReSharper restore StringLiteralTypo
+                return new IsTouching(target switch
+                {
+                    "_mouse_" => IsTouching.Targets.Mouse,
+                    "_edge_" => IsTouching.Targets.Edge,
+                    _ => throw new NotSupportedException($"Unknown target \"{target}\"")
+                });
+            }
         }
 
         return null;

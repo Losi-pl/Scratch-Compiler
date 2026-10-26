@@ -7,6 +7,7 @@ using ScratchCompiler.Parser.Functions.Looks;
 using ScratchCompiler.Parser.Functions.Motion;
 using ScratchCompiler.Parser.Functions.Data;
 using ScratchCompiler.Parser.Functions.Events;
+using ScratchCompiler.Parser.Functions.Sensing;
 using ScratchCompiler.Parser.Functions.Sound;
 using ScratchCompiler.Parser.Operations;
 
@@ -234,6 +235,11 @@ public abstract class Function
                     "other scripts in sprite" => Stop.Targets.Others,
                     _ => throw new KeyNotFoundException($"\"{sTarget}\" is unknown stop target")
                 });
+            }
+            case Ask.ScratchCode:
+            {
+                var question = json.GetStringInput(list, "QUESTION");
+                return new Ask(question);
             }
             case ShowHide.ScratchShowCode or ShowHide.ScratchHideCode:
                 return new ShowHide(opcode == ShowHide.ScratchShowCode);
