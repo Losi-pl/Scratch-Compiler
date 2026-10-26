@@ -71,6 +71,12 @@ public abstract class LogicArgument : Argument
                 var b = json.GetLogicInput(list, "OPERAND2");
                 return new AndOperator(a, b);
             }
+            case OrOperator.ScratchCode:
+            {
+                var a = json.GetLogicInput(list, "OPERAND1");
+                var b = json.GetLogicInput(list, "OPERAND2");
+                return new OrOperator(a, b);
+            }
             case IsTouchingColor.ScratchCode:
             {
                 var color = json.GetColor("COLOR");
