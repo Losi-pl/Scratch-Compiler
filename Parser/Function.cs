@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using ScratchCompiler.Parser.Functions;
+using ScratchCompiler.Parser.Functions.Control;
 using ScratchCompiler.Parser.Functions.Looks;
 using ScratchCompiler.Parser.Functions.Motion;
 using ScratchCompiler.Parser.Functions.Data;
@@ -213,6 +214,16 @@ public abstract class Function
                     throw new NullReferenceException($"Broadcast \"{code}\" not found");
                 return new SendBroadcastAndWait(br);
             }
+            case Wait.ScratchCode:
+            {
+                var delay = json.GetFloatInput(list, "DURATION");
+                return new Wait(delay);
+            }
+            case WaitUntil.ScratchCode:
+            {
+                var predicate = json.GetLogicInput(list, "CONDITION");
+                return new WaitUntil(predicate);
+            }
             case ShowHide.ScratchShowCode or ShowHide.ScratchHideCode:
                 return new ShowHide(opcode == ShowHide.ScratchShowCode);
             case SwitchCostume.ScratchNextCode:
@@ -400,6 +411,23 @@ internal static class ArgHelper
                     }
                 }
             } break;
+        }
+        return null!;
+    }
+    public static LogicArgument GetLogicInput(this JsonObject json, JsonObject list, string key)
+    {
+        switch (json["inputs"]?[key]?[0]!.GetValue<int>())
+        {
+            case 1:
+                return new NoLogic();
+            case 2:
+            {
+                var @ref = json["inputs"]?[key]?[1]?.GetValue<string>() ?? throw new KeyNotFoundException("No key found");
+                var argument = LogicArgument.Parse(list[@ref]!.AsObject(), list);
+                if (argument is null)
+                    return new UnknownLogicArgument(list[@ref]?["opcode"]?.GetValue<string>() ?? string.Empty);
+                return argument;
+            }
         }
         return null!;
     }
