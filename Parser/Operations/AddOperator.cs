@@ -42,6 +42,5 @@ public class AddOperator(FloatArgument a, FloatArgument b) : FloatArgument, IBra
         if (useBrackets)
             sb.Append(')');
         return sb.ToString();
-        
     }
 }

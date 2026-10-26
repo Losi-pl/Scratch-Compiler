@@ -65,6 +65,12 @@ public abstract class LogicArgument : Argument
                     _ => throw new NotSupportedException($"Unknown target \"{target}\"")
                 });
             }
+            case AndOperator.ScratchCode:
+            {
+                var a = json.GetLogicInput(list, "OPERAND1");
+                var b = json.GetLogicInput(list, "OPERAND2");
+                return new AndOperator(a, b);
+            }
         }
 
         return null;
