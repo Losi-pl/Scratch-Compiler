@@ -224,6 +224,17 @@ public abstract class Function
                 var predicate = json.GetLogicInput(list, "CONDITION");
                 return new WaitUntil(predicate);
             }
+            case Stop.ScratchCode:
+            {
+                var sTarget = json.GetField("STOP_OPTION");
+                return new Stop(sTarget switch
+                {
+                    "all" => Stop.Targets.All,
+                    "this script" => Stop.Targets.This,
+                    "other scripts in sprite" => Stop.Targets.Others,
+                    _ => throw new KeyNotFoundException($"\"{sTarget}\" is unknown stop target")
+                });
+            }
             case ShowHide.ScratchShowCode or ShowHide.ScratchHideCode:
                 return new ShowHide(opcode == ShowHide.ScratchShowCode);
             case SwitchCostume.ScratchNextCode:
