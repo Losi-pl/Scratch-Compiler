@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Drawing;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using ScratchCompiler.Parser.Functions;
@@ -263,10 +264,19 @@ public abstract class Function
     }
 }
 
-internal static class ArgHelper
+internal static class BlockHelpers
 {
     public static string GetField(this JsonObject json, string key) =>
         json["fields"]?[key]?[0]?.GetValue<string>() ?? string.Empty;
+    
+    public static Color GetColor(this JsonObject json, string key)
+    {
+        var code = (json["inputs"]?[key]?[1]?[1]?.GetValue<string>() ?? throw new InvalidCastException()).AsSpan();
+        var r = int.Parse(code[1..3], NumberStyles.HexNumber);
+        var g = int.Parse(code[3..5], NumberStyles.HexNumber);
+        var b = int.Parse(code[5..7], NumberStyles.HexNumber);
+        return Color.FromArgb(r, g, b);
+    }
 
     public static Argument GetStringInput(this JsonObject json, JsonObject list, string key)
     {

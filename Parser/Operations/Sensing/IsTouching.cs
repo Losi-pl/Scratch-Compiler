@@ -8,7 +8,7 @@ public class IsTouching(IsTouching.Targets target) : LogicArgument
 
     public Targets Target => target;
 
-    public override string ToString() => $"{{Is actor touching {target.Humanize(LetterCasing.LowerCase)}}}";
+    public override string ToString() => $"{{Is touching {target.Humanize(LetterCasing.LowerCase)}}}";
 
     public enum Targets : byte
     {
