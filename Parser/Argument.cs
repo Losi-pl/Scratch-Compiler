@@ -82,6 +82,12 @@ public abstract class LogicArgument : Argument
                 var color = json.GetColor("COLOR");
                 return new IsTouchingColor(color);
             }
+            case ColorTouchingColor.ScratchCode:
+            {
+                var a = json.GetColor("COLOR");
+                var b = json.GetColor("COLOR2");
+                return new ColorTouchingColor(a, b);
+            }
         }
 
         return null;
