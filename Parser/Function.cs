@@ -199,11 +199,19 @@ public abstract class Function
             }
             case SendBroadcast.ScratchCode:
             {
-                var code = json["fields"]?["BROADCAST_OPTION"]?[1]?.GetValue<string>() ?? string.Empty;
+                var code = json["inputs"]?["BROADCAST_INPUT"]?[1]?[2]?.GetValue<string>() ?? string.Empty;
                 var br = Project.Current.project.Broadcasts.FindByScratchCode(code);
                 if(br is null)
                     throw new NullReferenceException($"Broadcast \"{code}\" not found");
                 return new SendBroadcast(br);
+            }
+            case SendBroadcastAndWait.ScratchCode:
+            {
+                var code = json["inputs"]?["BROADCAST_INPUT"]?[1]?[2]?.GetValue<string>() ?? string.Empty;
+                var br = Project.Current.project.Broadcasts.FindByScratchCode(code);
+                if(br is null)
+                    throw new NullReferenceException($"Broadcast \"{code}\" not found");
+                return new SendBroadcastAndWait(br);
             }
             case ShowHide.ScratchShowCode or ShowHide.ScratchHideCode:
                 return new ShowHide(opcode == ShowHide.ScratchShowCode);
