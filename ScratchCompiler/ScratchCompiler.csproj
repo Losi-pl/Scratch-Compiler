@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Decoder\Decoder.csproj" />
+      <ProjectReference Include="..\Parser\Parser.csproj" />
     </ItemGroup>
 
 </Project>

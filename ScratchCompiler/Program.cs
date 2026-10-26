@@ -1,4 +1,4 @@
-﻿using ScratchCompiler.Decoder;
+﻿using ScratchCompiler.Parser;
 
 if (args.Length == 0)
     Console.WriteLine("Provide a fille to be compiled");
