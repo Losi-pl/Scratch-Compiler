@@ -4,11 +4,11 @@ using System.Collections.Immutable;
 
 namespace ScratchCompiler.Parser;
 
-public readonly struct AllVariables(Project project) : IReadOnlySet<Variable>
+public readonly struct AllVariables(SyntaxTree syntaxTree) : IReadOnlySet<Variable>
 {
-    public Enumerator GetEnumerator() => new(project);
-    IEnumerator<Variable> IEnumerable<Variable>.GetEnumerator() => new Enumerator(project);
-    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(project);
+    public Enumerator GetEnumerator() => new(syntaxTree);
+    IEnumerator<Variable> IEnumerable<Variable>.GetEnumerator() => new Enumerator(syntaxTree);
+    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(syntaxTree);
     
     public struct Enumerator : IEnumerator<Variable>
     {
@@ -16,10 +16,10 @@ public readonly struct AllVariables(Project project) : IReadOnlySet<Variable>
 
         private ImmutableArray<Variable>.Enumerator _enumerator;
 
-        public Enumerator(Project project)
+        public Enumerator(SyntaxTree syntaxTree)
         {
-            _actors = project.Actors.GetEnumerator();
-            _enumerator = project.Scene.Variables.GetEnumerator();
+            _actors = syntaxTree.Actors.GetEnumerator();
+            _enumerator = syntaxTree.Scene.Variables.GetEnumerator();
         }
         
         public bool MoveNext()
@@ -50,8 +50,8 @@ public readonly struct AllVariables(Project project) : IReadOnlySet<Variable>
     {
         get
         {
-            var sum = project.Scene.Broadcasts.Length;
-            foreach (var actor in project.Actors)
+            var sum = syntaxTree.Scene.Broadcasts.Length;
+            foreach (var actor in syntaxTree.Actors)
                 sum += actor.Broadcasts.Length;
             return sum;
         }
@@ -59,9 +59,9 @@ public readonly struct AllVariables(Project project) : IReadOnlySet<Variable>
 
     internal Variable? FindByScratchCode(string scratchCode)
     {
-        if(project.Scene.GetVariableByCode(scratchCode) is { } var)
+        if(syntaxTree.Scene.GetVariableByCode(scratchCode) is { } var)
             return var;
-        foreach (var actor in project.Actors)
+        foreach (var actor in syntaxTree.Actors)
             if(actor.GetVariableByCode(scratchCode) is { } var2)
                 return var2;
         return null;
@@ -69,9 +69,9 @@ public readonly struct AllVariables(Project project) : IReadOnlySet<Variable>
     
     public bool Contains(Variable item)
     {
-        if (project.Scene.Variables.Contains(item))
+        if (syntaxTree.Scene.Variables.Contains(item))
             return true;
-        foreach (var actor in project.Actors)
+        foreach (var actor in syntaxTree.Actors)
             if (actor.Variables.Contains(item))
                 return true;
         

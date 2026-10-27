@@ -39,7 +39,7 @@ public abstract class CodeEntry
                 case OnBackgroundChangedTo.ScratchCode:
                 {
                     var backdropName = json.GetField("BACKDROP");
-                    var scene = Project.Current.project.Scene;
+                    var scene = SyntaxTree.Current.project.Scene;
                     return new OnBackgroundChangedTo(scene.Costumes.FirstOrDefault(b => b.Name == backdropName)!);
                 }
                 
@@ -78,7 +78,7 @@ public abstract class CodeEntry
                 case OnBroadcast.ScratchCode:
                 {
                     var code = json["fields"]?["BROADCAST_OPTION"]?[1]?.GetValue<string>() ?? string.Empty;
-                    var br = Project.Current.project.Broadcasts.FindByScratchCode(code);
+                    var br = SyntaxTree.Current.project.Broadcasts.FindByScratchCode(code);
                     if(br is null)
                         throw new NullReferenceException($"Broadcast \"{code}\" not found");
                     return new OnBroadcast(br);

@@ -21,7 +21,7 @@ public class Sound
             _ => throw new InvalidDataException()
         };
         
-        _source = (Project.Current.archive, json["md5ext"]?.GetValue<string>() ?? string.Empty);
+        _source = (SyntaxTree.Current.archive, json["md5ext"]?.GetValue<string>() ?? string.Empty);
     }
 
 

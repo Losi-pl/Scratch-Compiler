@@ -3,7 +3,7 @@
 if (args.Length == 0)
     Console.WriteLine("Provide a fille to be compiled");
 
-var project = Project.Load(File.OpenRead(Path.GetFullPath(args[0])));
+var project = SyntaxTree.Load(File.OpenRead(Path.GetFullPath(args[0])));
 
 
 for (int i = 0; i < args.Length; i++)

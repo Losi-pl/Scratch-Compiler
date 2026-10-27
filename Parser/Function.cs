@@ -86,7 +86,7 @@ public abstract class Function
             case SetVariable.ScratchCode:
             {
                 var @ref = json["fields"]!["VARIABLE"]![1]!.GetValue<string>();
-                var variable = Project.Current.project.Variables.FindByScratchCode(@ref);
+                var variable = SyntaxTree.Current.project.Variables.FindByScratchCode(@ref);
                 return new SetVariable(variable ?? throw new KeyNotFoundException(), json.GetGeneralInput(list, "VALUE"));
             }
             case ChangeVariable.ScratchXCode or ChangeVariable.ScratchYCode or 
@@ -98,7 +98,7 @@ public abstract class Function
             case ChangeVariable.ScratchCode:
             {
                 var @ref = json["fields"]!["VARIABLE"]![1]!.GetValue<string>();
-                var variable = Project.Current.project.Variables.FindByScratchCode(@ref);
+                var variable = SyntaxTree.Current.project.Variables.FindByScratchCode(@ref);
                 return new ChangeVariable(variable ?? throw new KeyNotFoundException(), json.GetGeneralInput(list, "VALUE"));
             }
             case ChangeVariable.ScratchSoundCode:
@@ -134,7 +134,7 @@ public abstract class Function
             {
                 var @ref = json.GetInputReference("BACKDROP", list);
                 var dest = @ref.GetField("BACKDROP");
-                var background = Project.Current.project.Scene.Costumes.FirstOrDefault(b => b.Name == dest);
+                var background = SyntaxTree.Current.project.Scene.Costumes.FirstOrDefault(b => b.Name == dest);
                 if (background is not null)
                     return new SwitchBackground(background);
                 return new SwitchBackground(dest switch
@@ -203,7 +203,7 @@ public abstract class Function
             case SendBroadcast.ScratchCode:
             {
                 var code = json["inputs"]?["BROADCAST_INPUT"]?[1]?[2]?.GetValue<string>() ?? string.Empty;
-                var br = Project.Current.project.Broadcasts.FindByScratchCode(code);
+                var br = SyntaxTree.Current.project.Broadcasts.FindByScratchCode(code);
                 if(br is null)
                     throw new NullReferenceException($"Broadcast \"{code}\" not found");
                 return new SendBroadcast(br);
@@ -211,7 +211,7 @@ public abstract class Function
             case SendBroadcastAndWait.ScratchCode:
             {
                 var code = json["inputs"]?["BROADCAST_INPUT"]?[1]?[2]?.GetValue<string>() ?? string.Empty;
-                var br = Project.Current.project.Broadcasts.FindByScratchCode(code);
+                var br = SyntaxTree.Current.project.Broadcasts.FindByScratchCode(code);
                 if(br is null)
                     throw new NullReferenceException($"Broadcast \"{code}\" not found");
                 return new SendBroadcastAndWait(br);
@@ -298,7 +298,7 @@ internal static class BlockHelpers
                 if (json["inputs"]?[key]?[1]?[0]?.GetValue<int>() == 12)
                 {
                     var @ref = json["inputs"]?[key]?[1]?[2]?.GetValue<string>();
-                    var var = Project.Current.project.Variables.FindByScratchCode(@ref!);
+                    var var = SyntaxTree.Current.project.Variables.FindByScratchCode(@ref!);
                     return new GetString(var ?? throw new KeyNotFoundException());
                 }
                 
@@ -334,7 +334,7 @@ internal static class BlockHelpers
                 if (json["inputs"]?[key]?[1]?[0]?.GetValue<int>() == 12)
                 {
                     var @ref = json["inputs"]?[key]?[1]?[2]?.GetValue<string>();
-                    var var = Project.Current.project.Variables.FindByScratchCode(@ref!);
+                    var var = SyntaxTree.Current.project.Variables.FindByScratchCode(@ref!);
                     return new GetFloat(var ?? throw new KeyNotFoundException());
                 }
                 
@@ -370,7 +370,7 @@ internal static class BlockHelpers
                 if (json["inputs"]?[key]?[1]?[0]?.GetValue<int>() == 12)
                 {
                     var @ref = json["inputs"]?[key]?[1]?[2]?.GetValue<string>();
-                    var var = Project.Current.project.Variables.FindByScratchCode(@ref!);
+                    var var = SyntaxTree.Current.project.Variables.FindByScratchCode(@ref!);
                     return new GetInt(var ?? throw new KeyNotFoundException());
                 }
                 
@@ -425,7 +425,7 @@ internal static class BlockHelpers
                     case JsonValueKind.Array:
                     {
                         var varCode = json["inputs"]?[key]?[1]?[2]?.GetValue<string>() ?? string.Empty;
-                        var variable = Project.Current.project.Variables.FindByScratchCode(varCode);
+                        var variable = SyntaxTree.Current.project.Variables.FindByScratchCode(varCode);
                         if(variable is not null)
                             return new GeneralGet(variable);
                         else

@@ -4,17 +4,17 @@ using System.Collections.Immutable;
 
 namespace ScratchCompiler.Parser;
 
-public readonly struct AllBroadcasts(Project project): IReadOnlySet<Broadcast>
+public readonly struct AllBroadcasts(SyntaxTree syntaxTree): IReadOnlySet<Broadcast>
 {
-    public Enumerator GetEnumerator() => new(project);
-    IEnumerator<Broadcast> IEnumerable<Broadcast>.GetEnumerator() => new Enumerator(project);
-    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(project);
+    public Enumerator GetEnumerator() => new(syntaxTree);
+    IEnumerator<Broadcast> IEnumerable<Broadcast>.GetEnumerator() => new Enumerator(syntaxTree);
+    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(syntaxTree);
 
     internal Broadcast? FindByScratchCode(string scratchCode)
     {
-        if (project.Scene.GetBroadcastByCode(scratchCode) is { } broadcast)
+        if (syntaxTree.Scene.GetBroadcastByCode(scratchCode) is { } broadcast)
             return broadcast;
-        foreach (var actor in project.Actors)
+        foreach (var actor in syntaxTree.Actors)
             if(actor.GetBroadcastByCode(scratchCode) is { } broadcast2)
                 return broadcast2;
         return null;
@@ -26,10 +26,10 @@ public readonly struct AllBroadcasts(Project project): IReadOnlySet<Broadcast>
 
         private ImmutableArray<Broadcast>.Enumerator _enumerator;
 
-        public Enumerator(Project project)
+        public Enumerator(SyntaxTree syntaxTree)
         {
-            _actors = project.Actors.GetEnumerator();
-            _enumerator = project.Scene.Broadcasts.GetEnumerator();
+            _actors = syntaxTree.Actors.GetEnumerator();
+            _enumerator = syntaxTree.Scene.Broadcasts.GetEnumerator();
         }
         
         public bool MoveNext()
@@ -60,8 +60,8 @@ public readonly struct AllBroadcasts(Project project): IReadOnlySet<Broadcast>
     {
         get
         {
-            var sum = project.Scene.Broadcasts.Length;
-            foreach (var actor in project.Actors)
+            var sum = syntaxTree.Scene.Broadcasts.Length;
+            foreach (var actor in syntaxTree.Actors)
                 sum += actor.Broadcasts.Length;
             return sum;
         }
@@ -69,9 +69,9 @@ public readonly struct AllBroadcasts(Project project): IReadOnlySet<Broadcast>
 
     public bool Contains(Broadcast item)
     {
-        if (project.Scene.Broadcasts.Contains(item))
+        if (syntaxTree.Scene.Broadcasts.Contains(item))
             return true;
-        foreach (var actor in project.Actors)
+        foreach (var actor in syntaxTree.Actors)
             if (actor.Broadcasts.Contains(item))
                 return true;
         

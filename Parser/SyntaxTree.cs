@@ -5,12 +5,12 @@ using System.Text.Json.Nodes;
 
 namespace ScratchCompiler.Parser;
 
-public class Project
+public class SyntaxTree
 {
     [ThreadStatic]
-    internal static (Project project, ZipArchive archive) Current;
+    internal static (SyntaxTree project, ZipArchive archive) Current;
     
-    private Project(JsonObject json, ZipArchive archive)
+    private SyntaxTree(JsonObject json, ZipArchive archive)
     {
         Current = (this, archive);
         {
@@ -46,7 +46,7 @@ public class Project
     
     
     
-    public static Project Load(Stream source)
+    public static SyntaxTree Load(Stream source)
     {
         var archive = ZipArchive.CreateAsync(source, ZipArchiveMode.Read, true, Encoding.Default).Result;
         
