@@ -40,11 +40,15 @@ public class CodeBlock
     {
         StringBuilder sb = new();
         sb.Append(_entry);
+        var isEmpty = true;
         foreach (var function in _functions)
         {
+            isEmpty = false;
             sb.Append("\n    ");
             sb.AppendJoin("\n    ", function.ToString()!.Split('\n'));
         }
+        
+        sb.Append($"{(isEmpty ? "\n\n" : "\n")}End;");
         
         return  sb.ToString();
     }

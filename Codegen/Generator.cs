@@ -38,11 +38,6 @@ public static class Generator
         LLVM.InitializeNativeAsmParser();
         LLVM.InitializeNativeAsmPrinter();
 
-        Console.WriteLine(module.PrintToString());
-
-        var triple = LLVMTargetRef.DefaultTriple;
-        Console.WriteLine($"Targeting {triple}");
-
         return moduleCs;
     }
 }
