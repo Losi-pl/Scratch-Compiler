@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>14</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>ScratchCompiler.Codegen</RootNamespace>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Parser\Parser.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="libLLVM" Version="22.1.0" />
+      <PackageReference Include="LLVMSharp" Version="22.1.8" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+        <PackageReference Include="libLLVM.runtime.win-x64"
+                          Version="22.1.0"
+                          GeneratePathProperty="true" />
+    </ItemGroup>
+
+    <!--This code is generated using Deepseek because Im new to the LLVM as a whole and bearly understand what is happening-->
+    <Target Name="CopyLlvmNative" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+        <ItemGroup>
+            <_LlvmDll Include="$(NuGetPackageRoot)libllvm.runtime.win-x64\**\LLVM-C.dll" />
+        </ItemGroup>
+
+        <Warning Condition="'@(_LlvmDll)' == ''"
+                 Text="LLVM-C.dll not found under $(NuGetPackageRoot)libllvm.runtime.win-x64. Native LLVM will fail to load." />
+
+        <Message Importance="High" Text="Copying native LLVM from @(_LlvmDll)" />
+
+        <Copy SourceFiles="@(_LlvmDll)"
+              DestinationFolder="$(OutDir)"
+              SkipUnchangedFiles="true" />
+    </Target>
+    
+</Project>
