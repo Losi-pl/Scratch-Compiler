@@ -91,6 +91,14 @@ var code = syntax.GenerateCode(name);
 if(displayStage is DisplayStage.LLVM)
     code.Dump();
 
+var outPath = Path.ChangeExtension(projectPath, ".exe");
+
+var objectFile =code.Compile(outPath);
+
+code.Execute();
+
+File.Delete(objectFile);
+
 enum DisplayStage
 {
     // ReSharper disable once InconsistentNaming
