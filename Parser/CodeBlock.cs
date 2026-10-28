@@ -16,15 +16,15 @@ public class CodeBlock
         List<Function> functions = [];
         
         var current = entry;
-        if (_entry is not Dormant)
-            current = Next(current);
-
-        while (current is not null)
+        if (_entry is Dormant)
         {
-            functions.Add(Function.LoadFunction(current, json, target));
-            current = Next(current);
+            functions.Add(Function.LoadFunction(entry, json, target));
         }
         
+        var next = entry["next"]?.GetValue<string>();
+        if(!string.IsNullOrEmpty(next))
+            functions.AddRange(GetMethodString(json, next, target));
+
         // ReSharper disable once UseCollectionExpression
         _functions = functions.ToImmutableArray();
         
@@ -51,5 +51,19 @@ public class CodeBlock
         sb.Append($"{(isEmpty ? "\n\n" : "\n")}End;");
         
         return  sb.ToString();
+    }
+
+    public static IEnumerable<Function> GetMethodString(JsonObject list, string start, Target target)
+    {
+        var current = list[start]?.AsObject() ?? throw new NullReferenceException();
+        yield return Function.LoadFunction(current, list, target);
+
+        var nextCode = current["next"]?.GetValue<string>();
+        while (nextCode is not null)
+        {
+            current = list[nextCode]!.AsObject();
+            nextCode = current["next"]?.GetValue<string>();
+            yield return Function.LoadFunction(current, list, target);
+        }
     }
 }

@@ -17,7 +17,7 @@ public abstract class CodeEntry
         OnBroadcast.ScratchCode,
         OnCloneCreated.ScratchCode
     ];
-
+     
     internal static CodeEntry LoadEntry(JsonObject json, JsonObject list)
     {
         var opcode = json["opcode"]?.GetValue<string>() ?? string.Empty;
