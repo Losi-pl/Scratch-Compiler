@@ -7,6 +7,8 @@ if (args.Length == 0)
 var projectPath = Path.GetFullPath(args[0]);
 DisplayStage? displayStage = null;
 string? name = null;
+string? outPath = null;
+var runAfter = false;
 
 for (int i = 1; i < args.Length; ++i)
 {
@@ -31,6 +33,20 @@ for (int i = 1; i < args.Length; ++i)
                     break;
             }
         } break;
+        case "-o" or "--out":
+        {
+            ++i;
+            if (args.Length <= i)
+            {
+                Console.WriteLine("Argument \"out\" requires a path specified");
+                return;
+            }
+            
+            outPath = Path.GetFullPath(args[i]);
+        } break;
+        case "-j" or "--jit":
+            runAfter = true;
+            break;
         default:
         {
             Console.WriteLine($"Unknown option \"{args[i]}\"");
@@ -91,11 +107,11 @@ var code = syntax.GenerateCode(name);
 if(displayStage is DisplayStage.LLVM)
     code.Dump();
 
-var outPath = Path.ChangeExtension(projectPath, ".exe");
+outPath ??= Path.ChangeExtension(projectPath, ".exe");
+var objectFile = code.Compile(outPath);
 
-var objectFile =code.Compile(outPath);
-
-code.Execute();
+if(runAfter)
+    code.Execute();
 
 File.Delete(objectFile);
 

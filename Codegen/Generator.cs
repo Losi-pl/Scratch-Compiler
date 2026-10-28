@@ -79,7 +79,6 @@ public static class Generator
             // ReSharper restore UseCollectionExpression, StringLiteralTypo
         );
         linkProcess.WaitForExit();
-        Console.WriteLine($"Compiled to {path}");
         
         return objectFile;
     }
