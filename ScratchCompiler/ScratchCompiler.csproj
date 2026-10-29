@@ -13,4 +13,13 @@
       <ProjectReference Include="..\Parser\Parser.csproj" />
     </ItemGroup>
 
+    <Target Name="CopyNativeLibrary" AfterTargets="PostBuildEvent">
+        <Copy SourceFiles="$(SolutionDir)Libs\libScratch.lib"
+              DestinationFolder="$(TargetDir)"
+              SkipUnchangedFiles="true">
+            <!-- Capture exactly which files were copied -->
+            <Output TaskParameter="CopiedFiles" ItemName="ActualCopiedFiles" />
+        </Copy>
+        <Message Text="$(SolutionDir)Libs\libScratch.lib -> @(ActualCopiedFiles)" Importance="high" />
+    </Target>
 </Project>

@@ -17,4 +17,10 @@
       <PackageReference Include="OneOf" Version="3.0.271" />
     </ItemGroup>
 
+
+    <Target Name="BuildNativeLibrary" BeforeTargets="PreBuildEvent">
+        <MSBuild Projects="..\libScratch\libScratch.vcxproj"
+                 Targets="Build"
+                 Properties="Configuration=$(Configuration);Platform=$(Platform)" />
+    </Target>
 </Project>
