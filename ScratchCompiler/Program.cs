@@ -110,6 +110,7 @@ if(displayStage is DisplayStage.LLVM)
 outPath ??= Path.ChangeExtension(projectPath, ".exe");
 var objectFile = code.Compile(outPath);
 
+Console.WriteLine();
 if(runAfter)
     code.Execute();
 
