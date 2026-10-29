@@ -36,6 +36,9 @@ public class CodeBlock
         }
     }
 
+    public CodeEntry Entry => _entry;
+    public ImmutableArray<Function> Methods => _functions;
+    
     public string ToScript()
     {
         StringBuilder sb = new();
