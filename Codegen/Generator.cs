@@ -6,9 +6,10 @@ namespace ScratchCompiler.Codegen;
 public static class Generator
 {
     [ThreadStatic]
-    private static (LLVMContextRef, LLVMModuleRef, LLVMBuilderRef)? _current;
+    private static (LLVMContextRef, LLVMModuleRef, LLVMBuilderRef, SystemMethods)? _current;
     
-    internal static (LLVMContextRef Context, LLVMModuleRef Module, LLVMBuilderRef Builder) Current => _current ?? throw new InvalidOperationException("No code generation was started");
+    internal static (LLVMContextRef Context, LLVMModuleRef Module, LLVMBuilderRef Builder, SystemMethods Methods) Current => _current ?? 
+        throw new InvalidOperationException("No code generation was started");
     
     public static LLVMSharp.Module GenerateCode(this SyntaxTree tree, string? projectName = null)
     {
@@ -20,13 +21,8 @@ public static class Generator
         var module = moduleCs.Handle;
         var builder = builderCs.Handle;
         
-        _current = (context, module, builder);
-
-        // Declare the `puts` function (int puts(char*))
-        var putsRetTy = context.Int32Type;
-        var putsParamTys = new[] { LLVMTypeRef.CreatePointer(context.Int8Type, 0) };
-        var putsFnTy = LLVMTypeRef.CreateFunction(putsRetTy, putsParamTys);
-        var putsFn = module.AddFunction("puts", putsFnTy);
+        _current = (context, module, builder, null!);
+        _current = (context, module, builder, new());
 
         // Define the `main` function (void main())
         var mainRetTy = context.VoidType;
@@ -38,7 +34,7 @@ public static class Generator
         // Build the body of `main`: call puts("Hello, World!")
         builder.PositionAtEnd(mainBlock);
         var greeting = builder.BuildGlobalStringPtr("Hello, World!", "greeting");
-        builder.BuildCall2(putsFnTy, putsFn, [greeting]);
+        builder.BuildCall2(Current.Methods.Puts, [greeting]);
         builder.BuildRetVoid();
 
         LLVM.InitializeNativeTarget();
