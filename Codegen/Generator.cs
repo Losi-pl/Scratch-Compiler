@@ -76,13 +76,6 @@ public static class Generator
         );
         linkProcess.WaitForExit();
         
-        return objectFile;
-    }
-
-    public static void Execute(this LLVMSharp.Module module)
-    {
-        var engine = module.Handle.CreateExecutionEngine();
-        var main = module.Handle.GetNamedFunction("main");
-        engine.RunFunctionAsMain(main, 0, Array.Empty<string>(), Array.Empty<string>());
+        File.Delete(objectFile);
     }
 }

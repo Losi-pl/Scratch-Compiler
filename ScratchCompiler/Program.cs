@@ -108,13 +108,15 @@ if(displayStage is DisplayStage.LLVM)
     code.Dump();
 
 outPath ??= Path.ChangeExtension(projectPath, ".exe");
-var objectFile = code.Compile(outPath);
+code.Compile(outPath);
 
 Console.WriteLine();
-if(runAfter)
-    code.Execute();
+if (runAfter)
+{
+    using var result = System.Diagnostics.Process.Start(outPath);
+    result.WaitForExit();
+}
 
-File.Delete(objectFile);
 
 enum DisplayStage
 {
