@@ -1,6 +1,7 @@
 ﻿using System.Collections.Frozen;
 using System.Collections.Immutable;
 using LLVMSharp.Interop;
+using ScratchCompiler.Codegen.ValueTypes;
 using ScratchCompiler.Parser;
 
 namespace ScratchCompiler.Codegen;
@@ -14,5 +15,5 @@ internal class CurrentTools
 
     public ImmutableArray<LLVMMethod> OnStartMethods;
 
-    public FrozenDictionary<Target, LLVMValueRef> TargetNames = null!;
+    public FrozenDictionary<Target, CharPointer> TargetNames = null!;
 }

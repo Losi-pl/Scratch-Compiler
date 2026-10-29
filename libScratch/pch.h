@@ -10,16 +10,4 @@
 // w tym miejscu dodaj nagłówki, które mają być wstępnie kompilowane
 #include "framework.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-   __declspec(dllexport) char* __cdecl combineStrings(const char* left, const char* right);
-
-
-#ifdef __cplusplus
-}
-#endif
-
 #endif //PCH_H

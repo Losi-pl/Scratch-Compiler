@@ -15,13 +15,12 @@
 
     <Target Name="CopyNativeLibrary" AfterTargets="PostBuildEvent">
         <MSBuild Projects="..\libScratch\libScratch.vcxproj"
-                 Targets="Build"
+                 Targets="Rebuild"
                  Properties="Configuration=$(Configuration);Platform=x64" />
         
         <Copy SourceFiles="$(SolutionDir)Libs\libScratch.lib"
               DestinationFolder="$(TargetDir)"
               SkipUnchangedFiles="true">
-            <!-- Capture exactly which files were copied -->
             <Output TaskParameter="CopiedFiles" ItemName="ActualCopiedFiles" />
         </Copy>
         <Message Text="$(SolutionDir)Libs\libScratch.lib -> @(ActualCopiedFiles)" Importance="high" />
@@ -43,7 +42,7 @@
             <Output TaskParameter="CopiedFiles" ItemName="CopiedSysrootFiles" />
         </Copy>
 
-        <Warning Text="Zmienna 'llvm-sysroot' nie jest ustawiona! Kopiowanie pominięte."
+        <Warning Text="Variable 'llvm-sysroot' is not set! Coppying skipped."
                  Condition="!Exists('$(SysrootSource)')" />
     </Target>
 </Project>

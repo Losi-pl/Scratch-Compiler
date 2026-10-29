@@ -34,6 +34,7 @@ public static class Generator
             Builder = builder
         };
         Current.Methods = new();
+        MapActorNames(tree);
 
         Current.OnStartMethods = GenerateOnStartMethods(tree).ToImmutableArray();
         LLVMMethod main;
@@ -57,7 +58,7 @@ public static class Generator
             
             var text = builder.BuildStrCombine(hello, world);
             builder.BuildPrintLine(text);
-            builder.BuildHeapFree(text);
+            builder.BuildFree(text);
         }
         foreach (var method in Current.OnStartMethods)
             builder.BuildCall2(method, []);
@@ -72,7 +73,7 @@ public static class Generator
 
     private static void MapActorNames(SyntaxTree tree)
     {
-        Dictionary<Target, LLVMValueRef> local = new();
+        Dictionary<Target, CharPointer> local = new();
         foreach (var target in tree.GetAllTargets())
             local[target] = Current.Builder.CreateGlobalConstString(target.Name, target.Name + "::Name");
         Current.TargetNames = local.ToFrozenDictionary();
@@ -112,13 +113,16 @@ public static class Generator
                     {
                         case Say say:
                         {
-                            LLVMValueRef text;
+                            CharPointer text;
                             if(say.Text is ConstString @const)
                                 text = Current.Builder.BuildGlobalString(@const.Const, $"{methodName}::str_{++conStrCount:00}");
                             else
                                 throw NotImplemented(say.Text);
                             
-                            Current.Builder.BuildCall2(Std.Puts, [text]);
+                            var message = Current.Builder.BuildStrCombine(Current.TargetNames[target], Current.Methods.ActorIsSaying, text);
+
+                            Current.Builder.BuildPrintLine(message);
+                            Current.Builder.BuildFree(message);
                         } break;
                         
                         default:
@@ -170,7 +174,9 @@ public static class Generator
                 "/defaultlib:libvcruntime.lib",
                 $"/libpath:{sysroot}/crt/lib/x86_64",
                 $"/libpath:{sysroot}/sdk/lib/um/x86_64",
-                $"/libpath:{sysroot}/sdk/lib/ucrt/x86_64" }
+                $"/libpath:{sysroot}/sdk/lib/ucrt/x86_64",
+                "/noimplib"
+            }
             // ReSharper restore UseCollectionExpression, StringLiteralTypo
         );
         linkProcess.WaitForExit();

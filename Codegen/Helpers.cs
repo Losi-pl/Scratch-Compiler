@@ -21,26 +21,25 @@ internal static class Helpers
         
         unsafe
         {
-            fixed (char* text = value)
-            {
-                var contentTy  = LLVMTypeRef.CreateArray(Generator.Current.Context.Int8Type, 2);
-                var contentCst = LLVM.ConstStringInContext2(Generator.Current.Context, (sbyte*)text, 2, 0);
+            using var text = new MarshaledString(value);
+            
+            var contentTy  = LLVMTypeRef.CreateArray(Generator.Current.Context.Int8Type, (uint)(text.Length + 1));
+            var contentCst = LLVM.ConstStringInContext2(Generator.Current.Context, text, (uint)text.Length, 0);
 
-                var @const = Generator.Current.Module.AddGlobal(contentTy, name);
-                LLVM.SetInitializer(@const, contentCst);
-                LLVM.SetGlobalConstant(@const, 1);
-                LLVM.SetLinkage(@const, LLVMLinkage.LLVMPrivateLinkage);
-                LLVM.SetUnnamedAddr(@const, (int)LLVMUnnamedAddr.LLVMGlobalUnnamedAddr);
-                LLVM.SetAlignment(@const, 1);
-                return @const;
-            }
+            var @const = Generator.Current.Module.AddGlobal(contentTy, name);
+            LLVM.SetInitializer(@const, contentCst);
+            LLVM.SetGlobalConstant(@const, 1);
+            LLVM.SetLinkage(@const, LLVMLinkage.LLVMPrivateLinkage);
+            LLVM.SetUnnamedAddr(@const, (int)LLVMUnnamedAddr.LLVMGlobalUnnamedAddr);
+            LLVM.SetAlignment(@const, 1);
+            return @const;
         }
     }
     
     public static CharPointer BuildPrintLine(this LLVMBuilderRef builder, CharPointer text, string name = "") =>
         builder.BuildCall2(Generator.Current.Methods.Puts, [text], name);
-    public static void BuildHeapFree(this LLVMBuilderRef builder, VoidPointer value, string name = "") =>
-        builder.BuildCall2(Generator.Current.Methods.Free, [value], name);
     public static CharPointer BuildStrCombine(this LLVMBuilderRef builder, CharPointer left, CharPointer right, string name = "") =>
-        builder.BuildCall2(Generator.Current.Methods.CombineStrings, [left, right], name);
+        builder.BuildCall2(Generator.Current.Methods.CombineStrings2, [left, right], name);
+    public static CharPointer BuildStrCombine(this LLVMBuilderRef builder, CharPointer left, CharPointer center, CharPointer right, string name = "") =>
+        builder.BuildCall2(Generator.Current.Methods.CombineStrings3, [left, center, right], name);
 }
