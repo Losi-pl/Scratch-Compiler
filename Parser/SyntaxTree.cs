@@ -1,4 +1,5 @@
-﻿using System.Collections.Frozen;
+﻿using System.Collections;
+using System.Collections.Frozen;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -56,12 +57,53 @@ public class SyntaxTree
                 throw new InvalidOperationException("Invalid target file"),
             archive);
     }
+
+    public EnumerateTargets GetAllTargets() => new(this);
     
     public Version FileFormat { get; }
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public Version VirtualMachine { get; }
     public FrozenSet<Actor> Actors { get; }
     public Scene Scene { get; }
 
     public AllBroadcasts Broadcasts => new(this);
     public AllVariables Variables => new(this);
+    
+    public readonly struct EnumerateTargets(SyntaxTree tree) : IEnumerable<Target>
+    {
+        public Enumerator GetEnumerator() => new(tree);
+        
+        IEnumerator<Target> IEnumerable<Target>.GetEnumerator() => new Enumerator(tree);
+        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(tree);
+        
+        public struct Enumerator(SyntaxTree tree) : IEnumerator<Target>
+        {
+            private Target? _scene = tree.Scene;
+            private bool _ = true;
+            FrozenSet<Actor>.Enumerator _actors = tree.Actors.GetEnumerator();
+            
+            public bool MoveNext()
+            {
+                if (_)
+                {
+                    // ReSharper disable once AssignmentInsteadOfDiscard
+                    _ = false;
+                    return true;
+                }
+
+                if (_scene is not null)
+                    _scene = null;
+                return _actors.MoveNext();
+            }
+
+            public void Reset() => throw new NotSupportedException();
+
+            // ReSharper disable once MemberHidesStaticFromOuterClass
+            public Target Current => _scene ?? _actors.Current;
+
+            object IEnumerator.Current => _scene ?? _actors.Current;
+
+            public void Dispose() { }
+        }
+    }
 }
