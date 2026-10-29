@@ -19,7 +19,7 @@ char* combineStrings(const char* left, const char* right) {
         result[i] = left[i];
     for (unsigned int i = 0; i < rightC; ++i) 
         result[leftC + i] = right[i];
-    result[leftC + rightC - 1] = 0;
+    result[leftC + rightC] = 0;
     
     return result;
 }

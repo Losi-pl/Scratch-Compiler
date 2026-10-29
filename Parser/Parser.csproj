@@ -16,11 +16,4 @@
       <PackageReference Include="Newtonsoft.Json" Version="14.0.1-beta2" />
       <PackageReference Include="OneOf" Version="3.0.271" />
     </ItemGroup>
-
-
-    <Target Name="BuildNativeLibrary" BeforeTargets="PreBuildEvent">
-        <MSBuild Projects="..\libScratch\libScratch.vcxproj"
-                 Targets="Build"
-                 Properties="Configuration=$(Configuration);Platform=x64" />
-    </Target>
 </Project>

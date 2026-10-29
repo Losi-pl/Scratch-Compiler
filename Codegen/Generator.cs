@@ -155,7 +155,12 @@ public static class Generator
         
         targetMachine.EmitToFile(module.Handle, objectFile, LLVMCodeGenFileType.LLVMObjectFile);
 
+        #if DEBUG
         var sysroot = Environment.GetEnvironmentVariable("llvm-sysroot");
+        #else
+        var sysroot = Path.Combine(AppContext.BaseDirectory, "libs/");
+        #endif
+        
         using var linkProcess = System.Diagnostics.Process.Start(
             // ReSharper disable UseCollectionExpression, StringLiteralTypo
             "lld-link", new[] { objectFile, 

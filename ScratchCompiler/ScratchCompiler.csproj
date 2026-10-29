@@ -14,6 +14,10 @@
     </ItemGroup>
 
     <Target Name="CopyNativeLibrary" AfterTargets="PostBuildEvent">
+        <MSBuild Projects="..\libScratch\libScratch.vcxproj"
+                 Targets="Build"
+                 Properties="Configuration=$(Configuration);Platform=x64" />
+        
         <Copy SourceFiles="$(SolutionDir)Libs\libScratch.lib"
               DestinationFolder="$(TargetDir)"
               SkipUnchangedFiles="true">
@@ -21,5 +25,25 @@
             <Output TaskParameter="CopiedFiles" ItemName="ActualCopiedFiles" />
         </Copy>
         <Message Text="$(SolutionDir)Libs\libScratch.lib -> @(ActualCopiedFiles)" Importance="high" />
+    </Target>
+
+    <Target Name="CopySysrootToOutput" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' == 'Release'">
+        <PropertyGroup>
+            <SysrootSource>$(llvm-sysroot)</SysrootSource>
+            <SysrootDestination>$(TargetDir)libs</SysrootDestination>
+        </PropertyGroup>
+
+        <ItemGroup Condition="Exists('$(SysrootSource)')">
+            <SysrootFiles Include="$(SysrootSource)\**\*.*" />
+        </ItemGroup>
+
+        <Copy SourceFiles="@(SysrootFiles)"
+              DestinationFolder="$(SysrootDestination)\%(RecursiveDir)"
+              SkipUnchangedFiles="true">
+            <Output TaskParameter="CopiedFiles" ItemName="CopiedSysrootFiles" />
+        </Copy>
+
+        <Warning Text="Zmienna 'llvm-sysroot' nie jest ustawiona! Kopiowanie pominięte."
+                 Condition="!Exists('$(SysrootSource)')" />
     </Target>
 </Project>
