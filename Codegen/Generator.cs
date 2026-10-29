@@ -1,5 +1,8 @@
-﻿using Humanizer;
+﻿using System.Collections.Frozen;
+using System.Collections.Immutable;
+using Humanizer;
 using LLVMSharp.Interop;
+using ScratchCompiler.Codegen.ValueTypes;
 using ScratchCompiler.Parser;
 using ScratchCompiler.Parser.Entries;
 using ScratchCompiler.Parser.Functions.Looks;
@@ -23,11 +26,16 @@ public static class Generator
         var context = contextCs.Handle;
         var module = moduleCs.Handle;
         var builder = builderCs.Handle;
-        
-        _current = (context, module, builder, null!);
-        _current = (context, module, builder, new());
 
-        var onStartMethods = GenerateOnStartMethods(tree);
+        Current = new()
+        {
+            Context = context,
+            Module = module,
+            Builder = builder
+        };
+        Current.Methods = new();
+
+        Current.OnStartMethods = GenerateOnStartMethods(tree).ToImmutableArray();
         LLVMMethod main;
 
         { // Main Method
@@ -43,8 +51,15 @@ public static class Generator
         // Build the body of `main`: call puts("Hello, World!")
         var mainBlock = main.Function.AppendBasicBlock("entry");
         builder.PositionAtEnd(mainBlock);
-        builder.BuildCall2(Current.Methods.Puts, [builder.BuildGlobalStringPtr("Hello, World!", "hi!")]);
-        foreach (var method in onStartMethods)
+        {
+            var hello = (CharPointer)builder.BuildGlobalStringPtr("Hello, World!");
+            var world = (CharPointer)builder.BuildGlobalStringPtr(" by Losi");
+            
+            var text = builder.BuildStrCombine(hello, world);
+            builder.BuildPrintLine(text);
+            builder.BuildHeapFree(text);
+        }
+        foreach (var method in Current.OnStartMethods)
             builder.BuildCall2(method, []);
         builder.BuildRetVoid();
 
@@ -55,6 +70,14 @@ public static class Generator
         return moduleCs;
     }
 
+    private static void MapActorNames(SyntaxTree tree)
+    {
+        Dictionary<Target, LLVMValueRef> local = new();
+        foreach (var target in tree.GetAllTargets())
+            local[target] = Current.Builder.CreateGlobalConstString(target.Name, target.Name + "::Name");
+        Current.TargetNames = local.ToFrozenDictionary();
+    }
+    
     private static List<LLVMMethod> GenerateOnStartMethods(SyntaxTree tree)
     {
         List<LLVMMethod> list = [];
@@ -96,7 +119,6 @@ public static class Generator
                                 throw NotImplemented(say.Text);
                             
                             Current.Builder.BuildCall2(Std.Puts, [text]);
-                            //Current.Builder.BuildCall2(Std.Puts, [Std.ENDL]);
                         } break;
                         
                         default:
@@ -138,6 +160,7 @@ public static class Generator
             // ReSharper disable UseCollectionExpression, StringLiteralTypo
             "lld-link", new[] { objectFile, 
                 $"/out:{path}",
+                Path.Combine(AppContext.BaseDirectory, "libScratch.lib"), 
                 "/defaultlib:libcmt.lib", 
                 "/defaultlib:libvcruntime.lib",
                 $"/libpath:{sysroot}/crt/lib/x86_64",

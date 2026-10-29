@@ -21,6 +21,6 @@
     <Target Name="BuildNativeLibrary" BeforeTargets="PreBuildEvent">
         <MSBuild Projects="..\libScratch\libScratch.vcxproj"
                  Targets="Build"
-                 Properties="Configuration=$(Configuration);Platform=$(Platform)" />
+                 Properties="Configuration=$(Configuration);Platform=x64" />
     </Target>
 </Project>
