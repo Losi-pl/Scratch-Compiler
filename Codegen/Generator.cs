@@ -1,5 +1,9 @@
-﻿using LLVMSharp.Interop;
+﻿using Humanizer;
+using LLVMSharp.Interop;
 using ScratchCompiler.Parser;
+using ScratchCompiler.Parser.Entries;
+using ScratchCompiler.Parser.Functions.Looks;
+using ScratchCompiler.Parser.Operations;
 
 namespace ScratchCompiler.Codegen;
 
@@ -10,6 +14,8 @@ public static class Generator
     
     internal static (LLVMContextRef Context, LLVMModuleRef Module, LLVMBuilderRef Builder, SystemMethods Methods) Current => _current ?? 
         throw new InvalidOperationException("No code generation was started");
+
+    private static SystemMethods Std => Current.Methods;
     
     public static LLVMSharp.Module GenerateCode(this SyntaxTree tree, string? projectName = null)
     {
@@ -24,17 +30,25 @@ public static class Generator
         _current = (context, module, builder, null!);
         _current = (context, module, builder, new());
 
-        // Define the `main` function (void main())
-        var mainRetTy = context.VoidType;
-        var mainParamTys = new LLVMTypeRef[] { };
-        var mainFnTy = LLVMTypeRef.CreateFunction(mainRetTy, mainParamTys);
-        var mainFn = module.AddFunction("main", mainFnTy);
-        var mainBlock = mainFn.AppendBasicBlock("entry");
+        var onStartMethods = GenerateOnStartMethods(tree);
+        LLVMMethod main;
+
+        { // Main Method
+            var mainRetTy = context.VoidType;
+            var mainParamTys = Array.Empty<LLVMTypeRef>();
+            var mainFnTy = LLVMTypeRef.CreateFunction(mainRetTy, mainParamTys);
+            var mainFn = module.AddFunction("main", mainFnTy);
+
+            main = new(mainFn, mainFnTy, mainRetTy, mainParamTys, false);
+        } // Main Method
+        
 
         // Build the body of `main`: call puts("Hello, World!")
+        var mainBlock = main.Function.AppendBasicBlock("entry");
         builder.PositionAtEnd(mainBlock);
-        var greeting = builder.BuildGlobalStringPtr("Hello, World!", "greeting");
-        builder.BuildCall2(Current.Methods.Puts, [greeting]);
+        builder.BuildCall2(Current.Methods.Puts, [builder.BuildGlobalStringPtr("Hello, World!", "hi!")]);
+        foreach (var method in onStartMethods)
+            builder.BuildCall2(method, []);
         builder.BuildRetVoid();
 
         LLVM.InitializeNativeTarget();
@@ -44,7 +58,68 @@ public static class Generator
         return moduleCs;
     }
 
-    public static string Compile(this LLVMSharp.Module module, string path)
+    private static List<LLVMMethod> GenerateOnStartMethods(SyntaxTree tree)
+    {
+        List<LLVMMethod> list = [];
+        
+        var voidTy = Current.Context.VoidType;
+        var @params = Array.Empty<LLVMTypeRef>();
+        var funType = LLVMTypeRef.CreateFunction(voidTy, @params);
+        
+        foreach (var target in tree.GetAllTargets())
+        {
+            var count = 0;
+            foreach (var script in target.Blocks)
+            {
+                if (script.Entry is not OnStart)
+                    continue;
+
+                var methodName = $"{target.Name}::OnStart_{count:000}";
+                count++;
+                
+                var fun = Current.Module.AddFunction(methodName, funType);
+                
+                list.Add(new(fun, funType, voidTy, @params, false));
+                
+                var currentBlock = fun.AppendBasicBlock("entry");
+                Current.Builder.PositionAtEnd(currentBlock);
+
+                foreach (var method in script.Methods)
+                {
+                    var conStrCount = -1;
+                    
+                    switch (method)
+                    {
+                        case Say say:
+                        {
+                            LLVMValueRef text;
+                            if(say.Text is ConstString @const)
+                                text = Current.Builder.BuildGlobalString(@const.Const, $"{methodName}::str_{++conStrCount:00}");
+                            else
+                                throw NotImplemented(say.Text);
+                            
+                            Current.Builder.BuildCall2(Std.Puts, [text]);
+                            //Current.Builder.BuildCall2(Std.Puts, [Std.ENDL]);
+                        } break;
+                        
+                        default:
+                            throw NotImplemented(method);
+                    }
+                }
+
+                Current.Builder.BuildRetVoid();
+            }
+        }
+
+        return list;
+    }
+
+    
+    
+    private static Exception NotImplemented(object element) => 
+        new NotImplementedException($"Element {element.ToString().Truncate(32)} is not yet implemented");
+    
+    public static void Compile(this LLVMSharp.Module module, string path)
     {
         var triple = LLVMTargetRef.DefaultTriple;
         
@@ -62,7 +137,6 @@ public static class Generator
         targetMachine.EmitToFile(module.Handle, objectFile, LLVMCodeGenFileType.LLVMObjectFile);
 
         var sysroot = Environment.GetEnvironmentVariable("llvm-sysroot");
-        
         using var linkProcess = System.Diagnostics.Process.Start(
             // ReSharper disable UseCollectionExpression, StringLiteralTypo
             "lld-link", new[] { objectFile, 
