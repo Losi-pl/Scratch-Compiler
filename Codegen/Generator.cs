@@ -10,11 +10,8 @@ namespace ScratchCompiler.Codegen;
 public static class Generator
 {
     [ThreadStatic]
-    private static (LLVMContextRef, LLVMModuleRef, LLVMBuilderRef, SystemMethods)? _current;
+    internal static CurrentTools Current;
     
-    internal static (LLVMContextRef Context, LLVMModuleRef Module, LLVMBuilderRef Builder, SystemMethods Methods) Current => _current ?? 
-        throw new InvalidOperationException("No code generation was started");
-
     private static SystemMethods Std => Current.Methods;
     
     public static LLVMSharp.Module GenerateCode(this SyntaxTree tree, string? projectName = null)
