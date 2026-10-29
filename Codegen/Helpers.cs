@@ -1,4 +1,5 @@
 ﻿using LLVMSharp.Interop;
+using ScratchCompiler.Codegen.ValueTypes;
 
 namespace ScratchCompiler.Codegen;
 
@@ -35,4 +36,11 @@ internal static class Helpers
             }
         }
     }
+    
+    public static CharPointer BuildPrintLine(this LLVMBuilderRef builder, CharPointer text, string name = "") =>
+        builder.BuildCall2(Generator.Current.Methods.Puts, [text], name);
+    public static void BuildHeapFree(this LLVMBuilderRef builder, VoidPointer value, string name = "") =>
+        builder.BuildCall2(Generator.Current.Methods.Free, [value], name);
+    public static CharPointer BuildStrCombine(this LLVMBuilderRef builder, CharPointer left, CharPointer right, string name = "") =>
+        builder.BuildCall2(Generator.Current.Methods.CombineStrings, [left, right], name);
 }
