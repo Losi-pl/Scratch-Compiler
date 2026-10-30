@@ -17,6 +17,7 @@ internal class SystemMethods
     
     
     public readonly CharPointer ActorIsSaying;
+    public readonly CharPointer ActorIsThinking;
 
     public SystemMethods()
     {
@@ -31,6 +32,7 @@ internal class SystemMethods
 
 
         ActorIsSaying = Generator.Current.Builder.CreateGlobalConstString(" is saying: ", "scratch::target_is_saying");
+        ActorIsThinking = Generator.Current.Builder.CreateGlobalConstString(" is thinking: ", "scratch::target_is_thinking");
     }
 
     private LLVMContextRef Context => Generator.Current.Context;

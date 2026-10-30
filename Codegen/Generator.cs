@@ -114,8 +114,8 @@ public static class Generator
                         case Say say:
                         {
                             CharPointer text;
-                            if(say.Text is ConstString @const)
-                                text = Current.Builder.BuildGlobalString(@const.Const, $"{methodName}::str_{++conStrCount:00}");
+                            if (say.Text is ConstString @const)
+                                text = GetConstString(@const.Const);
                             else
                                 throw NotImplemented(say.Text);
                             
@@ -124,10 +124,25 @@ public static class Generator
                             Current.Builder.BuildPrintLine(message);
                             Current.Builder.BuildFree(message);
                         } break;
+                        case Think think:
+                        {
+                            CharPointer text;
+                            if (think.Text is ConstString @const)
+                                text = GetConstString(@const.Const);
+                            else
+                                throw NotImplemented(think.Text);
+                            
+                            var message = Current.Builder.BuildStrCombine(Current.TargetNames[target], Current.Methods.ActorIsThinking, text);
+
+                            Current.Builder.BuildPrintLine(message);
+                            Current.Builder.BuildFree(message);
+                        } break;
                         
                         default:
                             throw NotImplemented(method);
                     }
+                    
+                    CharPointer GetConstString(string content) => Current.Builder.BuildGlobalString(content, $"{methodName}::str_{++conStrCount:00}");
                 }
 
                 Current.Builder.BuildRetVoid();
