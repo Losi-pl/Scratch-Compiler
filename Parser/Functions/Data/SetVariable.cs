@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using System.Text.Json.Nodes;
 using Humanizer;
 using OneOf;
 
@@ -41,8 +42,8 @@ public class SetVariable : Function
     private readonly OneOf<SysVariables, Variable> _destination;
     private readonly Argument _value;
     
-    public SetVariable(Variable destination, Argument value) => (_destination, _value) = (destination, value);
-    public SetVariable(SysVariables destination, Argument value) => (_destination, _value) = (destination, value);
+    private SetVariable(Variable destination, Argument value) => (_destination, _value) = (destination, value);
+    private SetVariable(SysVariables destination, Argument value) => (_destination, _value) = (destination, value);
 
     public override string ToString() => $"Set {{{
         _destination switch {
@@ -51,6 +52,41 @@ public class SetVariable : Function
             _ => throw new InvalidOperationException()
         }
     }}} to {_value};";
+    
+    // ReSharper disable once UnusedMember.Local
+    [FunctionParser(ScratchSetXCode)]     [FunctionParser(ScratchSetYCode)]
+    [FunctionParser(ScratchRotationCode)] [FunctionParser(ScratchSizeCode)]
+    [FunctionParser(ScratchVolumeCode)]
+    private static SetVariable ParseSystem(JsonObject json, JsonObject list, Target _, string opcode) {
+        var value = json.GetGeneralInput(list, SystemVariables[opcode].Value);
+        return new SetVariable(SystemVariables[opcode].Type, value);
+    }
+    
+    [FunctionParser(ScratchSoundCode)] // ReSharper disable once UnusedMember.Local
+    private static SetVariable ParseSounds(JsonObject json, JsonObject list, Target _) {
+        var dest = json.GetField("EFFECT");
+        var value = json.GetFloatInput(list, "VALUE");
+        return new SetVariable(dest switch
+        {
+            "PITCH" => SysVariables.Pitch,
+            "PAN" => SysVariables.PanStereo,
+            _ => throw new NotSupportedException($"Unknown value type \"{dest}\"")
+        }, value);
+    }
+    
+    [FunctionParser(ScratchGraphicCode)] // ReSharper disable once UnusedMember.Local
+    private static SetVariable ParseGraphics(JsonObject json, JsonObject list, Target _) {
+        var effect = json.GetField("EFFECT");
+        var value = json.GetGeneralInput(list, "VALUE");
+        return new SetVariable(GraphicEffects[effect], value);
+    }
+    
+    [FunctionParser(ScratchCode)] // ReSharper disable once UnusedMember.Local
+    private static SetVariable Parse(JsonObject json, JsonObject list, Target _) {
+        var @ref = json["fields"]!["VARIABLE"]![1]!.GetValue<string>();
+        var variable = SyntaxTree.Current.project.Variables.FindByScratchCode(@ref);
+        return new SetVariable(variable ?? throw new KeyNotFoundException(), json.GetGeneralInput(list, "VALUE"));
+    }
     
     public enum SysVariables : byte
     {

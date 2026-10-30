@@ -1,5 +1,7 @@
-﻿using System.Drawing;
+﻿using System.Collections.Frozen;
+using System.Drawing;
 using System.Globalization;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using ScratchCompiler.Parser.Functions;
@@ -16,251 +18,47 @@ namespace ScratchCompiler.Parser;
 
 public abstract class Function
 {
+    private static FrozenDictionary<string, Func<JsonObject, JsonObject, Target, string, Function>> FunctionParsers = typeof(Function).Assembly.GetTypes()
+        .SelectMany(t => t.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+        .Where(m => m.GetCustomAttributes<FunctionParserAttribute>().Any())
+        .Where(m => {
+            if (!(m.ReturnType == typeof(Function) || m.ReturnType.IsSubclassOf(typeof(Function))))
+                return false;
+            
+            var args = m.GetParameters();
+            if (args.Length is not (3 or 4))
+                return false;
+            
+            if (args[0].ParameterType != typeof(JsonObject))
+                return false;
+            if (args[1].ParameterType != typeof(JsonObject))
+                return false;
+            if (args[2].ParameterType != typeof(Target))
+                return false;
+            if (args.Length is 4 && args[3].ParameterType != typeof(string))
+                return false;
+
+            return true;
+        }).SelectMany(m =>
+        {
+            Func<JsonObject, JsonObject, Target, string, Function> invoke;
+            if (m.GetParameters().Length == 4)
+                invoke = (me, list, target, myOpcode) => (Function)m.Invoke(null, [me, list, target, myOpcode])!;
+            else
+                invoke = (me, list, target, _) => (Function)m.Invoke(null, [me, list, target])!;
+
+            return m.GetCustomAttributes<FunctionParserAttribute>().Select(op =>
+                new KeyValuePair<string, Func<JsonObject, JsonObject, Target, string, Function>>(op.OpCode, invoke));
+        }).ToFrozenDictionary();
 
     public static Function LoadFunction(JsonObject json, JsonObject list, Target target)
     {
         var opcode = json["opcode"]?.GetValue<string>() ?? string.Empty;
-        switch (opcode)
-        {
-            case MoveBySteps.ScratchCode:
-            {
-                var steps = json.GetFloatInput(list, "STEPS");
-                return new MoveBySteps(steps);
-            }
-            case Rotate.ScratchCodeRight or Rotate.ScratchCodeLeft:
-            {
-                var degrees = json.GetFloatInput(list, "DEGREES");
-                return new Rotate(degrees, opcode == Rotate.ScratchCodeLeft ? Rotate.TurnDirection.Left : Rotate.TurnDirection.Right);
-            }
-            case MoveTo.ScratchCodeRelative:
-            {
-                var @ref = json.GetInputReference("TO", list);
-                var mode = @ref.GetField("TO") switch
-                {
-                    "_mouse_" => MoveTo.RelativePosition.Mouse,
-                    "_random_" => MoveTo.RelativePosition.Random,
-                    _ => throw new NotSupportedException()
-                };
-                return new MoveTo(mode);
-            }
-            case MoveTo.ScratchCodeAbsolute:
-            {
-                var x = json.GetFloatInput(list, "X");
-                var y = json.GetFloatInput(list, "Y");
-                return new MoveTo((x, y));
-            }
-            case GlideTo.ScratchCodeRelative:
-            {
-                var @ref = json.GetInputReference("TO", list);
-                var mode = @ref.GetField("TO") switch
-                {
-                    "_mouse_" => MoveTo.RelativePosition.Mouse,
-                    "_random_" => MoveTo.RelativePosition.Random,
-                    _ => throw new NotSupportedException()
-                };
-                var time = json.GetFloatInput(list, "SECS");
-                return new GlideTo(time, mode);
-            }
-            case GlideTo.ScratchCodeAbsolute:
-            {
-                var x = json.GetFloatInput(list, "X");
-                var y = json.GetFloatInput(list, "Y");
-                var time = json.GetFloatInput(list, "SECS");
-                return new GlideTo(time, x, y);
-            }
-            case PointTowards.ScratchCode:
-            {
-                var @ref = json.GetInputReference("TOWARDS", list);
-                var mode = @ref.GetField("TOWARDS");
-                if (mode != "_mouse_")
-                    throw new InvalidCastException();
-                return new PointTowards();
-            }
-            case SetVariable.ScratchSetXCode or SetVariable.ScratchSetYCode or 
-                SetVariable.ScratchRotationCode or SetVariable.ScratchSizeCode or 
-                SetVariable.ScratchVolumeCode:
-            {
-                var value = json.GetGeneralInput(list, SetVariable.SystemVariables[opcode].Value);
-                return new SetVariable(SetVariable.SystemVariables[opcode].Type, value);
-            }
-            case SetVariable.ScratchCode:
-            {
-                var @ref = json["fields"]!["VARIABLE"]![1]!.GetValue<string>();
-                var variable = SyntaxTree.Current.project.Variables.FindByScratchCode(@ref);
-                return new SetVariable(variable ?? throw new KeyNotFoundException(), json.GetGeneralInput(list, "VALUE"));
-            }
-            case ChangeVariable.ScratchXCode or ChangeVariable.ScratchYCode or 
-                ChangeVariable.ScratchSizeCode or ChangeVariable.ScratchVolumeCode:
-            {
-                var value = json.GetGeneralInput(list, ChangeVariable.SystemVariables[opcode].Value);
-                return new ChangeVariable(ChangeVariable.SystemVariables[opcode].Type, value);
-            }
-            case ChangeVariable.ScratchCode:
-            {
-                var @ref = json["fields"]!["VARIABLE"]![1]!.GetValue<string>();
-                var variable = SyntaxTree.Current.project.Variables.FindByScratchCode(@ref);
-                return new ChangeVariable(variable ?? throw new KeyNotFoundException(), json.GetGeneralInput(list, "VALUE"));
-            }
-            case ChangeVariable.ScratchSoundCode:
-            {
-                var dest = json.GetField("EFFECT");
-                var value = json.GetFloatInput(list, "VALUE");
-                return new ChangeVariable(dest switch
-                    {
-                        "PITCH" => SetVariable.SysVariables.Pitch,
-                        "PAN" => SetVariable.SysVariables.PanStereo,
-                        _ => throw new NotSupportedException($"Unknown value type \"{dest}\"")
-                    }, value);
-            }
-            case SetVariable.ScratchSoundCode:
-            {
-                var dest = json.GetField("EFFECT");
-                var value = json.GetFloatInput(list, "VALUE");
-                return new SetVariable(dest switch
-                {
-                    "PITCH" => SetVariable.SysVariables.Pitch,
-                    "PAN" => SetVariable.SysVariables.PanStereo,
-                    _ => throw new NotSupportedException($"Unknown value type \"{dest}\"")
-                }, value);
-            }
-            case Say.ScratchCode or Think.ScratchCode:
-            {
-                var text = json.GetStringInput(list, "MESSAGE");
-                return opcode == Say.ScratchCode ? new Say(text) : new Think(text);
-            }
-            case SwitchBackground.ScratchNextCode:
-                return new SwitchBackground(SwitchBackground.Relative.Next);
-            case SwitchBackground.ScratchCode:
-            {
-                var @ref = json.GetInputReference("BACKDROP", list);
-                var dest = @ref.GetField("BACKDROP");
-                var background = SyntaxTree.Current.project.Scene.Costumes.FirstOrDefault(b => b.Name == dest);
-                if (background is not null)
-                    return new SwitchBackground(background);
-                return new SwitchBackground(dest switch
-                {
-                    "next backdrop" => SwitchBackground.Relative.Next,
-                    "previous backdrop" => SwitchBackground.Relative.Previous,
-                    "random backdrop" => SwitchBackground.Relative.Random,
-                    _ => throw new NotSupportedException($"Unknown background {{{dest}}}")
-                });
-            }
-            case SwitchCostume.ScratchCode:
-            {
-                var @ref = json.GetInputReference("COSTUME", list);
-                var dest = @ref.GetField("COSTUME");
-                var costume = target.Costumes.FirstOrDefault(c => c.Name == dest) ?? throw new KeyNotFoundException(dest);
-                return new SwitchCostume(costume);
-            }
-            case ChangeVariable.ScratchGraphicCode:
-            {
-                var effect = json.GetField("EFFECT");
-                var change = json.GetGeneralInput(list, "CHANGE");
-                return new ChangeVariable(SetVariable.GraphicEffects[effect], change);
-            }
-            case SetVariable.ScratchGraphicCode:
-            {
-                var effect = json.GetField("EFFECT");
-                var value = json.GetGeneralInput(list, "VALUE");
-                return new SetVariable(SetVariable.GraphicEffects[effect], value);
-            }
-            case SetRotationStyle.ScratchCode:
-            {
-                var style = json.GetField("STYLE");
-                return new SetRotationStyle(SetRotationStyle.ModesMap[style]);
-            }
-            case SayFor.ScratchCode or ThinkFor.ScratchCode:
-            {
-                var text = json.GetGeneralInput(list, "MESSAGE");
-                var time = json.GetFloatInput(list, "SECS");
-                return opcode == SayFor.ScratchCode ? new SayFor(text, time) : new ThinkFor(text, time);
-            }
-            case MoveLayers.ScratchCode:
-            {
-                var direction = json.GetField("FORWARD_BACKWARD");
-                var move = json.GetIntInput(list, "NUM");
-                return new MoveLayers(MoveLayers.DirectionMap[direction], move);
-            }
-            case MoveToLayer.ScratchCode:
-            {
-                var destination = json.GetField("FRONT_BACK");
-                return new MoveToLayer(MoveToLayer.DestinationMap[destination]);
-            }
-            case PlayUntilDone.ScratchCode:
-            {
-                var @ref = json.GetInputReference("SOUND_MENU", list);
-                var name = @ref.GetField("SOUND_MENU");
-                var sound = target.Sounds.FirstOrDefault(c => c.Name == name) ?? throw new KeyNotFoundException(name);
-                return new PlayUntilDone(sound);
-            }
-            case StartPlaying.ScratchCode:
-            {
-                var @ref = json.GetInputReference("SOUND_MENU", list);
-                var name = @ref.GetField("SOUND_MENU");
-                var sound = target.Sounds.FirstOrDefault(c => c.Name == name) ?? throw new KeyNotFoundException(name);
-                return new StartPlaying(sound);
-            }
-            case SendBroadcast.ScratchCode:
-            {
-                var code = json["inputs"]?["BROADCAST_INPUT"]?[1]?[2]?.GetValue<string>() ?? string.Empty;
-                var br = SyntaxTree.Current.project.Broadcasts.FindByScratchCode(code);
-                if(br is null)
-                    throw new NullReferenceException($"Broadcast \"{code}\" not found");
-                return new SendBroadcast(br);
-            }
-            case SendBroadcastAndWait.ScratchCode:
-            {
-                var code = json["inputs"]?["BROADCAST_INPUT"]?[1]?[2]?.GetValue<string>() ?? string.Empty;
-                var br = SyntaxTree.Current.project.Broadcasts.FindByScratchCode(code);
-                if(br is null)
-                    throw new NullReferenceException($"Broadcast \"{code}\" not found");
-                return new SendBroadcastAndWait(br);
-            }
-            case Wait.ScratchCode:
-            {
-                var delay = json.GetFloatInput(list, "DURATION");
-                return new Wait(delay);
-            }
-            case WaitUntil.ScratchCode:
-            {
-                var predicate = json.GetLogicInput(list, "CONDITION");
-                return new WaitUntil(predicate);
-            }
-            case Stop.ScratchCode:
-            {
-                var sTarget = json.GetField("STOP_OPTION");
-                return new Stop(sTarget switch
-                {
-                    "all" => Stop.Targets.All,
-                    "this script" => Stop.Targets.This,
-                    "other scripts in sprite" => Stop.Targets.Others,
-                    _ => throw new KeyNotFoundException($"\"{sTarget}\" is unknown stop target")
-                });
-            }
-            case Ask.ScratchCode:
-            {
-                var question = json.GetStringInput(list, "QUESTION");
-                return new Ask(question);
-            }
-            case ShowHide.ScratchShowCode or ShowHide.ScratchHideCode:
-                return new ShowHide(opcode == ShowHide.ScratchShowCode);
-            case SwitchCostume.ScratchNextCode:
-                return new SwitchCostume(SwitchCostume.RelativeMode.Next);
-            case BounceFromEdge.ScratchCode:
-                return BounceFromEdge.Instance;
-            case ClearGraphicEffects.ScratchCode:
-                return ClearGraphicEffects.Instance;
-            case StopPlaying.ScratchCode:
-                return StopPlaying.Instance;
-            case ClearSoundEffects.ScratchCode:
-                return ClearSoundEffects.Instance;
-            case DestroyClone.ScratchCode:
-                return DestroyClone.Instance;
-            case CloneMyself.ScratchCode:
-                return CloneMyself.Instance;
-            default:
-                return new UnknownFunction(json);
-        }
+        if(FunctionParsers.TryGetValue(opcode, out var pars))
+            if (pars(json, list, target, opcode) is { } function)
+                return function;
+        
+        return new UnknownFunction(json);
     }
 }
 

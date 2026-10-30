@@ -1,4 +1,6 @@
-﻿namespace ScratchCompiler.Parser.Functions.Control;
+﻿using System.Text.Json.Nodes;
+
+namespace ScratchCompiler.Parser.Functions.Control;
 
 public class DestroyClone : Function
 {
@@ -6,5 +8,8 @@ public class DestroyClone : Function
     
     public static readonly DestroyClone Instance = new();
 
+    [FunctionParser(ScratchCode)] // ReSharper disable once UnusedMember.Local
+    private static DestroyClone Parse(JsonObject _, JsonObject _2, Target _3) => Instance;
+    
     public override string ToString() => "Destroy this clone;";
 }

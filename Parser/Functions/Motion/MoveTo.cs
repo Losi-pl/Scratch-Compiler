@@ -1,12 +1,13 @@
-﻿using OneOf;
+﻿using System.Text.Json.Nodes;
+using OneOf;
 using ScratchCompiler.Parser.Operations;
 
 namespace ScratchCompiler.Parser.Functions.Motion;
 
 public class MoveTo : Function
 {
-    public const string ScratchCodeRelative = "motion_goto";
-    public const string ScratchCodeAbsolute = "motion_gotoxy";
+    public const string ScratchRelativeCode = "motion_goto";
+    public const string ScratchAbsoluteCode = "motion_gotoxy";
     
     public const string ScratchSelectionCode = "motion_goto_menu";
     
@@ -24,6 +25,25 @@ public class MoveTo : Function
             (t1.Item2 is IConstArgument and IBracketedString y ? y.ToString(false) : t1.Item2.ToString())}]",
         _ => throw new NotSupportedException()
     }};";
+    
+    [FunctionParser(ScratchRelativeCode)] // ReSharper disable once UnusedMember.Local
+    private static MoveTo ParseRelative(JsonObject json, JsonObject list, Target _) {
+        var @ref = json.GetInputReference("TO", list);
+        var mode = @ref.GetField("TO") switch
+        {
+            "_mouse_" => RelativePosition.Mouse,
+            "_random_" => RelativePosition.Random,
+            _ => throw new NotSupportedException()
+        };
+        return new MoveTo(mode);
+    }
+    
+    [FunctionParser(ScratchAbsoluteCode)] // ReSharper disable once UnusedMember.Local
+    private static MoveTo ParseAbsolute(JsonObject json, JsonObject list, Target _) {
+        var x = json.GetFloatInput(list, "X");
+        var y = json.GetFloatInput(list, "Y");
+        return new MoveTo((x, y));
+    }
     
     public enum RelativePosition : byte
     {

@@ -1,12 +1,13 @@
 ﻿using System.Collections.Frozen;
+using System.Text.Json.Nodes;
 using Humanizer;
 
 namespace ScratchCompiler.Parser.Functions.Motion;
 
-public class SetRotationStyle(SetRotationStyle.Modes mode) : Function
+public class SetRotationStyle : Function
 {
     public const string ScratchCode = "motion_setrotationstyle";
-    public Modes Mode => mode;
+    public Modes Mode { get; }
 
     public static readonly FrozenDictionary<string, Modes> ModesMap =
         new Dictionary<string, Modes>
@@ -16,7 +17,15 @@ public class SetRotationStyle(SetRotationStyle.Modes mode) : Function
             ["all around"] = Modes.Free,
         }.ToFrozenDictionary();
 
-    public override string ToString() => $"Set rotation style to {{{mode.Humanize(LetterCasing.Title)}}};";
+    private SetRotationStyle(Modes mode) => Mode = mode;
+    
+    [FunctionParser(ScratchCode)] // ReSharper disable once UnusedMember.Local
+    private static SetRotationStyle Parse(JsonObject json, JsonObject list, Target _) {
+        var style = json.GetField("STYLE");
+        return new SetRotationStyle(ModesMap[style]);
+    }
+    
+    public override string ToString() => $"Set rotation style to {{{Mode.Humanize(LetterCasing.Title)}}};";
 
     public enum Modes : byte { Free, LeftRight, Locked }
 }
