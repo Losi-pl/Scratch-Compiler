@@ -8,6 +8,7 @@ var projectPath = Path.GetFullPath(args[0]);
 DisplayStage? displayStage = null;
 string? name = null;
 string? outPath = null;
+var noCodegen = false;
 var runAfter = false;
 
 for (int i = 1; i < args.Length; ++i)
@@ -44,6 +45,9 @@ for (int i = 1; i < args.Length; ++i)
             
             outPath = Path.GetFullPath(args[i]);
         } break;
+        case "-no" or "--no-codegen":
+            noCodegen = true;
+            break;
         case "-j" or "--jit":
             runAfter = true;
             break;
@@ -101,6 +105,9 @@ if (displayStage is DisplayStage.SyntaxTree)
         firstT = false;
     }
 }
+
+if (noCodegen)
+    return;
 
 var code = syntax.GenerateCode(name);
 
