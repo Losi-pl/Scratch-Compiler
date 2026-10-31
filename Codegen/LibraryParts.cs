@@ -17,9 +17,13 @@ internal class LibraryParts
     public readonly LLVMMethod CombineStrings3;
 
     public readonly StructType ActorStruct;
+    public readonly StructType ActorIterator;
+    public readonly LLVMMethod GetActorIterator;
+    public readonly LLVMMethod NextActor;
     public readonly LLVMMethod ConstructActor;
     public readonly LLVMMethod ActorSetPosX;
     public readonly LLVMMethod ActorSetPosY;
+    
     
     #region Motion
 
@@ -39,6 +43,8 @@ internal class LibraryParts
         PointerType = tools.Context.CreatePointerType(0);
         Puts = LLVMMethod.CreateMethod(tools.Context.VoidType, "puts", [LLVMTypeRef.CreatePointer(tools.Context.Int8Type, 0)]);
         Malloc = LLVMMethod.CreateMethod(PointerType, "malloc", [tools.Context.Int64Type]);
+        
+        var charPtr = LLVMTypeRef.CreatePointer(tools.Context.Int8Type, 0);
 
         {
             var fields = new[]
@@ -48,18 +54,18 @@ internal class LibraryParts
             };
 
             ActorStruct = StructType.Create(fields, false, "Actor");
-            ConstructActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Actor@@QEAA@MM@Z", 
-                [ActorStruct.Pointer, tools.Context.FloatType, tools.Context.FloatType]);
-            ActorSetPosX = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_x@Actor@@QEAAXM@Z", 
-                [ActorStruct.Pointer, tools.Context.FloatType]);
-            ActorSetPosY = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_y@Actor@@QEAAXM@Z", 
-                [ActorStruct.Pointer, tools.Context.FloatType]);
+            ConstructActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Actor@@QEAA@PEADMM@Z", [ActorStruct.Pointer, charPtr, tools.Context.FloatType, tools.Context.FloatType]);
+            ActorSetPosX = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_x@Actor@@QEAAXM@Z", [ActorStruct.Pointer, tools.Context.FloatType]);
+            ActorSetPosY = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_y@Actor@@QEAAXM@Z", [ActorStruct.Pointer, tools.Context.FloatType]);
+            
+            ActorIterator = StructType.CreateListNode(ActorStruct.Pointer, "Actor*");
+            GetActorIterator = LLVMMethod.CreateMethod(tools.Context.VoidType, "?begin_actor_iteration@@YA?AV?$_List_iterator@V?$_List_val@U?$_List_simple_types@PEAUActor@@@std@@@std@@@std@@XZ", [ActorIterator.Pointer]);
+            RegisterActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "register_new_actor", [ActorStruct.Pointer]);
+            NextActor = LLVMMethod.CreateMethod(ActorStruct.Pointer, "next_actor", [ActorIterator.Pointer]);
         }
         
         {
-            var charPtr = LLVMTypeRef.CreatePointer(tools.Context.Int8Type, 0);
             ScratchInit = LLVMMethod.CreateMethod(tools.Context.VoidType, "scratch_init", []);
-            RegisterActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "register_new_actor", [ActorStruct.Pointer]);
             CombineStrings2 = LLVMMethod.CreateMethod(charPtr, "combineStrings_2", [charPtr, charPtr]);
             CombineStrings3 = LLVMMethod.CreateMethod(charPtr, "combineStrings_3", [charPtr, charPtr, charPtr]);
         }

@@ -21,8 +21,9 @@ void Actor::set_y(const float y)
         this->y = y;
 }
 
-Actor::Actor(float x, float y)
+Actor::Actor(char* name, float x, float y)
 {
+    this->name = name;
     this->x = x;
     this->y = y;
 }

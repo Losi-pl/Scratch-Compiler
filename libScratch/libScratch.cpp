@@ -66,3 +66,23 @@ void register_new_actor(Actor* actor)
 {
     actors.push_back(actor);
 }
+
+std::list<Actor*>::iterator begin_actor_iteration()
+{
+    return actors.begin();
+}
+
+Actor* next_actor(std::list<Actor*>::iterator* iterator)
+{
+    if (*iterator == actors.end())
+        return nullptr;
+
+    Actor* result = **iterator;
+    ++(*iterator);
+    return result;
+}
+
+unsigned int actor_count()
+{
+    return static_cast<unsigned int>(actors.size());
+}

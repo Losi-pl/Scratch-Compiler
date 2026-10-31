@@ -13,6 +13,9 @@ public struct StructType
     public readonly ulong ByteSize;
     
     public static StructType Create(ReadOnlySpan<LLVMTypeRef> fields, bool packed, string name = "") => new(fields, packed, name);
+
+    private StructType(LLVMTypeRef type, LLVMTypeRef pointer, ImmutableArray<LLVMTypeRef> fields, bool isPacked, string? name, ulong byteSize)
+    { Type = type; Pointer = pointer; Fields = fields; IsPacked = isPacked; Name = name; ByteSize = byteSize; }
     
     private StructType(ReadOnlySpan<LLVMTypeRef> fields, bool packed, string name)
     {
@@ -28,5 +31,38 @@ public struct StructType
             ByteSize = LLVM.ABISizeOfType(targetData, Type);
         }
     }
+    
+    public static StructType CreateListNode(LLVMTypeRef type, string contentName = "")
+    {
+        var fullName = $"list::Node<{(string.IsNullOrEmpty(contentName) ? type.StructName : contentName)}>";
+        LLVMTypeRef listNode;
+        {
+            using var name = new MarshaledString(fullName);
+            unsafe { listNode = LLVM.StructCreateNamed(Generator.Current.Context, name); }
+        }
+
+        var fields = new LLVMTypeRef[3];
+        fields[0] = LLVMTypeRef.CreatePointer(listNode, 0);
+        fields[1] = fields[0];
+        fields[2] = type;
+
+        unsafe
+        {
+            LLVMOpaqueType** fieldsPtr = stackalloc LLVMOpaqueType*[fields.Length];
+            for (var i = 0; i < fields.Length; i++)
+                fieldsPtr[i] = fields[i];
+
+            LLVM.StructSetBody(listNode, fieldsPtr, (uint)fields.Length, 0);
+        }
+        
+        unsafe
+        {
+            LLVMTargetDataRef targetData = LLVM.GetModuleDataLayout(Generator.Current.Module);
+            var byteSize = LLVM.ABISizeOfType(targetData, listNode);
+            // ReSharper disable once UseCollectionExpression
+            return new StructType(listNode, LLVMTypeRef.CreatePointer(listNode, 0), fields.ToImmutableArray(), false, fullName, byteSize);
+        }
+    }
+    
     public static implicit operator LLVMTypeRef(StructType type) => type.Type;
 }

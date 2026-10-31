@@ -14,5 +14,13 @@ int main(int argc, char* argv[])
     auto combined2 = combineStrings_3(str3, str4, str5);
     
     std::cout << combined << '\n' << combined2;
+    
+    scratch_init();
+    
+    auto iter = begin_actor_iteration();
+    auto iter_size = sizeof(std::list<Actor*>::iterator);
+    
+    std::cout << "sizeof(std::list<Actor*>::iterator) = " << iter_size << '\n';
+    
     return 0;
 }

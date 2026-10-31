@@ -34,30 +34,77 @@ public static class Generator
         };
         Current.Libs = new(Current);
         MapActorNames(tree);
+        
+        var main = LLVMMethod.CreateMethod(context.VoidType, "main", []);
+        var actorSetup = LLVMMethod.CreateMethod(context.VoidType, "actor_setup", []);
+        var actorEnumeration = LLVMMethod.CreateMethod(context.VoidType, "actor_enumeration", []);
 
         // ReSharper disable once UseCollectionExpression
         Current.OnStartMethods = GenerateOnStartMethods(tree).ToImmutableArray();
-        var main = LLVMMethod.CreateMethod(context.VoidType, "main", []);
-
-        // Build the body of `main`
+        
         {
-            var mainBlock = main.Function.AppendBasicBlock("entry");
-            builder.PositionAtEnd(mainBlock);
-            builder.BuildCall2(Current.Libs.ScratchInit, []);
+            var entryBlock = actorSetup.Function.AppendBasicBlock("entry");
+            builder.PositionAtEnd(entryBlock);
             
-            Dictionary<Actor, LLVMValueRef> actors = [];
             var actorSize = LLVMValueRef.CreateConst(Current.Libs.ActorStruct.ByteSize);
             foreach (var actor in tree.Actors)
             {
                 var posX = LLVMValueRef.CreateConst(actor.DefaultPosition.x);
                 var posY = LLVMValueRef.CreateConst(actor.DefaultPosition.y);
                 var inst = builder.BuildCall2(Current.Libs.Malloc, [actorSize], actor.Name);
-                builder.BuildCall2(Current.Libs.ConstructActor, [inst, posX, posY]);
+                builder.BuildCall2(Current.Libs.ConstructActor, [inst, Current.TargetNames[actor], posX, posY]);
                 builder.BuildCall2(Current.Libs.RegisterActor, [inst]);
             }
-            
+
+            builder.BuildRetVoid();
+        }
+        
+        // Build the body of `main`
+        {
+            var mainBlock = main.Function.AppendBasicBlock("entry");
+            builder.PositionAtEnd(mainBlock);
+            builder.BuildCall2(Current.Libs.ScratchInit, []);
+
+            builder.BuildCall2(actorSetup, []);
+            builder.BuildCall2(actorEnumeration, []);
+
             foreach (var method in Current.OnStartMethods)
                 builder.BuildCall2(method, []);
+            builder.BuildRetVoid();
+        }
+        
+        // Build the body of `actor_enumeration`
+        {
+            var mainBlock = actorEnumeration.Function.AppendBasicBlock("entry");
+            builder.PositionAtEnd(mainBlock);
+
+            var iter = builder.BuildAlloca(Current.Libs.ActorIterator, "iterator");
+
+            builder.BuildCall2(Current.Libs.GetActorIterator, [iter]);
+            
+            // ReSharper disable InconsistentNaming
+            var loop_test = actorEnumeration.Function.AppendBasicBlock("loop_test");
+            var loop_body = actorEnumeration.Function.AppendBasicBlock("loop_body");
+            // ReSharper restore InconsistentNaming
+            
+            var exit = actorEnumeration.Function.AppendBasicBlock("exit");
+
+            builder.BuildBr(loop_test); // entry -> loop_test
+            builder.PositionAtEnd(loop_test);
+            var actor = builder.BuildCall2(Current.Libs.NextActor, [iter], "actor");
+            var nullptr = LLVMValueRef.CreateConstPointerNull(Current.Libs.ActorStruct.Pointer);
+            var condition = builder.BuildICmp(LLVMIntPredicate.LLVMIntNE, actor, nullptr, "condition");
+            builder.BuildCondBr(condition, loop_body, exit);
+            
+            builder.PositionAtEnd(loop_body);
+            var charPtr = LLVMTypeRef.CreatePointer(context.Int8Type, 0);
+            var actorNameField = builder.BuildStructGEP2(Current.Libs.ActorStruct, actor, 0);
+            var actorName = builder.BuildLoad2(charPtr, actorNameField, "actor_name");
+            builder.BuildPrintLine(actorName);
+            
+            builder.BuildBr(loop_test);
+            
+            builder.PositionAtEnd(exit);
             builder.BuildRetVoid();
         }
         

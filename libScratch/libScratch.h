@@ -1,6 +1,10 @@
 ﻿#ifndef SCRATCH_H
 #define SCRATCH_H
+#include <list>
+
 #include "Actor.h"
+
+std::list<Actor*>::iterator __cdecl begin_actor_iteration();
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,6 +20,9 @@ __declspec(dllexport) void __cdecl looks_think(const char* target, const char* t
 __declspec(dllexport) void __cdecl scratch_init();
 
 __declspec(dllexport) void __cdecl register_new_actor(Actor* actor);
+__declspec(dllexport) unsigned int __cdecl actor_count();
+
+__declspec(dllexport) Actor* __cdecl next_actor(std::list<Actor*>::iterator* iterator);
 
 #ifdef __cplusplus
 }
