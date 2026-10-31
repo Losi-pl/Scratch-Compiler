@@ -6,12 +6,12 @@ using ScratchCompiler.Parser;
 
 namespace ScratchCompiler.Codegen;
 
-internal class CurrentTools
+internal class CodegenTools
 {
     public LLVMContextRef Context;
     public LLVMModuleRef Module;
     public LLVMBuilderRef Builder;
-    public SystemMethods Methods = null!;
+    public LibraryParts Methods = null!;
 
     public ImmutableArray<LLVMMethod> OnStartMethods;
 

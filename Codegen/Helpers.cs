@@ -36,7 +36,7 @@ internal static class Helpers
         }
     }
     
-    public static CharPointer BuildPrintLine(this LLVMBuilderRef builder, CharPointer text, string name = "") =>
+    public static void BuildPrintLine(this LLVMBuilderRef builder, CharPointer text, string name = "") =>
         builder.BuildCall2(Generator.Current.Methods.Puts, [text], name);
     public static CharPointer BuildStrCombine(this LLVMBuilderRef builder, CharPointer left, CharPointer right, string name = "") =>
         builder.BuildCall2(Generator.Current.Methods.CombineStrings2, [left, right], name);

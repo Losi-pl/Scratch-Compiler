@@ -2,8 +2,10 @@
 //
 
 #include "pch.h"
-#include <cstdlib>
 #include "libScratch.h"
+
+#include <iostream>
+#include <ostream>
 
 char* combineStrings_2(const char* left, const char* right) {
     unsigned int leftC = 0, rightC = 0;
@@ -40,4 +42,14 @@ char* combineStrings_3(const char* left, const char* center, const char* right) 
     result[leftC + centerC + rightC] = 0;
     
     return result;
+}
+
+void looks_say(const char* target, const char* text)
+{
+    std::cout << target << " is saying: " << text << '\n';
+}
+
+void looks_think(const char* target, const char* text)
+{
+    std::cout << target << " is thinking: " << text << '\n';
 }

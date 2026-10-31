@@ -12,10 +12,9 @@ namespace ScratchCompiler.Codegen;
 
 public static class Generator
 {
-    [ThreadStatic]
-    internal static CurrentTools Current;
-    
-    private static SystemMethods Std => Current.Methods;
+#pragma warning disable CS8618
+    [ThreadStatic] internal static CodegenTools Current;
+#pragma warning restore CS8618
     
     public static LLVMSharp.Module GenerateCode(this SyntaxTree tree, string? projectName = null)
     {
@@ -33,37 +32,22 @@ public static class Generator
             Module = module,
             Builder = builder
         };
-        Current.Methods = new();
+        Current.Methods = new(Current);
         MapActorNames(tree);
 
+        // ReSharper disable once UseCollectionExpression
         Current.OnStartMethods = GenerateOnStartMethods(tree).ToImmutableArray();
-        LLVMMethod main;
+        var main = LLVMMethod.CreateMethod(context.VoidType, "main", []);
 
-        { // Main Method
-            var mainRetTy = context.VoidType;
-            var mainParamTys = Array.Empty<LLVMTypeRef>();
-            var mainFnTy = LLVMTypeRef.CreateFunction(mainRetTy, mainParamTys);
-            var mainFn = module.AddFunction("main", mainFnTy);
-
-            main = new(mainFn, mainFnTy, mainRetTy, mainParamTys, false);
-        } // Main Method
-        
-
-        // Build the body of `main`: call puts("Hello, World!")
-        var mainBlock = main.Function.AppendBasicBlock("entry");
-        builder.PositionAtEnd(mainBlock);
+        // Build the body of `main`
         {
-            var hello = (CharPointer)builder.BuildGlobalStringPtr("Hello, World!");
-            var world = (CharPointer)builder.BuildGlobalStringPtr(" by Losi");
-            
-            var text = builder.BuildStrCombine(hello, world);
-            builder.BuildPrintLine(text);
-            builder.BuildFree(text);
+            var mainBlock = main.Function.AppendBasicBlock("entry");
+            builder.PositionAtEnd(mainBlock);
+            foreach (var method in Current.OnStartMethods)
+                builder.BuildCall2(method, []);
+            builder.BuildRetVoid();
         }
-        foreach (var method in Current.OnStartMethods)
-            builder.BuildCall2(method, []);
-        builder.BuildRetVoid();
-
+        
         LLVM.InitializeNativeTarget();
         LLVM.InitializeNativeAsmParser();
         LLVM.InitializeNativeAsmPrinter();
@@ -83,78 +67,18 @@ public static class Generator
     {
         List<LLVMMethod> list = [];
         
-        var voidTy = Current.Context.VoidType;
-        var @params = Array.Empty<LLVMTypeRef>();
-        var funType = LLVMTypeRef.CreateFunction(voidTy, @params);
-        
         foreach (var target in tree.GetAllTargets())
         {
             var count = 0;
             foreach (var script in target.Blocks)
-            {
-                if (script.Entry is not OnStart)
-                    continue;
-
-                var methodName = $"{target.Name}::OnStart_{count:000}";
-                count++;
-                
-                var fun = Current.Module.AddFunction(methodName, funType);
-                
-                list.Add(new(fun, funType, voidTy, @params, false));
-                
-                var currentBlock = fun.AppendBasicBlock("entry");
-                Current.Builder.PositionAtEnd(currentBlock);
-
-                foreach (var method in script.Methods)
-                {
-                    var conStrCount = -1;
-                    
-                    switch (method)
-                    {
-                        case Say say:
-                        {
-                            CharPointer text;
-                            if (say.Text is ConstString @const)
-                                text = GetConstString(@const.Const);
-                            else
-                                throw NotImplemented(say.Text);
-                            
-                            var message = Current.Builder.BuildStrCombine(Current.TargetNames[target], Current.Methods.ActorIsSaying, text);
-
-                            Current.Builder.BuildPrintLine(message);
-                            Current.Builder.BuildFree(message);
-                        } break;
-                        case Think think:
-                        {
-                            CharPointer text;
-                            if (think.Text is ConstString @const)
-                                text = GetConstString(@const.Const);
-                            else
-                                throw NotImplemented(think.Text);
-                            
-                            var message = Current.Builder.BuildStrCombine(Current.TargetNames[target], Current.Methods.ActorIsThinking, text);
-
-                            Current.Builder.BuildPrintLine(message);
-                            Current.Builder.BuildFree(message);
-                        } break;
-                        
-                        default:
-                            throw NotImplemented(method);
-                    }
-                    
-                    CharPointer GetConstString(string content) => Current.Builder.BuildGlobalString(content, $"{methodName}::str_{++conStrCount:00}");
-                }
-
-                Current.Builder.BuildRetVoid();
-            }
+                if(script.Entry is OnStart)
+                    list.Add(GenMethodCalls.GenerateMethod(target, script, $"OnStart_{count++}"));
         }
 
         return list;
     }
 
-    
-    
-    private static Exception NotImplemented(object element) => 
+    internal static Exception NotImplemented(object element) => 
         new NotImplementedException($"Element {element.ToString().Truncate(32)} is not yet implemented");
     
     public static void Compile(this LLVMSharp.Module module, string path)
