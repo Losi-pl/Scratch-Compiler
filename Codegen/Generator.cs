@@ -32,7 +32,7 @@ public static class Generator
             Module = module,
             Builder = builder
         };
-        Current.Methods = new(Current);
+        Current.Libs = new(Current);
         MapActorNames(tree);
 
         // ReSharper disable once UseCollectionExpression
@@ -43,17 +43,17 @@ public static class Generator
         {
             var mainBlock = main.Function.AppendBasicBlock("entry");
             builder.PositionAtEnd(mainBlock);
-            builder.BuildCall2(Current.Methods.ScratchInit, []);
+            builder.BuildCall2(Current.Libs.ScratchInit, []);
             
             Dictionary<Actor, LLVMValueRef> actors = [];
-            var actorSize = LLVMValueRef.CreateConst(Current.Methods.ActorStruct.ByteSize);
+            var actorSize = LLVMValueRef.CreateConst(Current.Libs.ActorStruct.ByteSize);
             foreach (var actor in tree.Actors)
             {
                 var posX = LLVMValueRef.CreateConst(actor.DefaultPosition.x);
                 var posY = LLVMValueRef.CreateConst(actor.DefaultPosition.y);
-                var inst = builder.BuildCall2(Current.Methods.Malloc, [actorSize], actor.Name);
-                builder.BuildCall2(Current.Methods.ConstructActor, [inst, posX, posY]);
-                builder.BuildCall2(Current.Methods.RegisterActor, [inst]);
+                var inst = builder.BuildCall2(Current.Libs.Malloc, [actorSize], actor.Name);
+                builder.BuildCall2(Current.Libs.ConstructActor, [inst, posX, posY]);
+                builder.BuildCall2(Current.Libs.RegisterActor, [inst]);
             }
             
             foreach (var method in Current.OnStartMethods)

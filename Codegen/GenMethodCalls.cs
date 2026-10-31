@@ -59,7 +59,7 @@ internal static class GenMethodCalls
         else
             throw Generator.NotImplemented(say.Text);
         
-        Builder.BuildCall2(Current.Methods.LooksSay, [Current.TargetNames[target], text]);
+        Builder.BuildCall2(Current.Libs.LooksSay, [Current.TargetNames[target], text]);
     }
     
     public static void BuildThinkBlock(Target target, Think think, string methodName)
@@ -70,7 +70,7 @@ internal static class GenMethodCalls
         else
             throw Generator.NotImplemented(think.Text);
                             
-        Builder.BuildCall2(Current.Methods.LooksThink, [Current.TargetNames[target], text]);
+        Builder.BuildCall2(Current.Libs.LooksThink, [Current.TargetNames[target], text]);
     }
     
     

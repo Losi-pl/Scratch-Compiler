@@ -11,7 +11,7 @@ internal class CodegenTools
     public LLVMContextRef Context;
     public LLVMModuleRef Module;
     public LLVMBuilderRef Builder;
-    public LibraryParts Methods = null!;
+    public LibraryParts Libs = null!;
 
     public ImmutableArray<LLVMMethod> OnStartMethods;
 
