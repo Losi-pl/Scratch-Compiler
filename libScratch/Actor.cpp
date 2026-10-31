@@ -20,3 +20,9 @@ void Actor::set_y(const float y)
     else
         this->y = y;
 }
+
+Actor::Actor(float x, float y)
+{
+    this->x = x;
+    this->y = y;
+}

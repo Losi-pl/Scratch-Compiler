@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-__cdecl struct Actor
+struct Actor
 {
 public:
     float x;
@@ -9,5 +9,7 @@ public:
     void __cdecl set_x(float x);
     
     void __cdecl set_y(float y);
+    
+   __cdecl Actor(float x, float y);
 };
 

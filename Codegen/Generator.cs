@@ -43,6 +43,19 @@ public static class Generator
         {
             var mainBlock = main.Function.AppendBasicBlock("entry");
             builder.PositionAtEnd(mainBlock);
+            builder.BuildCall2(Current.Methods.ScratchInit, []);
+            
+            Dictionary<Actor, LLVMValueRef> actors = [];
+            var actorSize = LLVMValueRef.CreateConst(Current.Methods.ActorStruct.ByteSize);
+            foreach (var actor in tree.Actors)
+            {
+                var posX = LLVMValueRef.CreateConst(actor.DefaultPosition.x);
+                var posY = LLVMValueRef.CreateConst(actor.DefaultPosition.y);
+                var inst = builder.BuildCall2(Current.Methods.Malloc, [actorSize], actor.Name);
+                builder.BuildCall2(Current.Methods.ConstructActor, [inst, posX, posY]);
+                builder.BuildCall2(Current.Methods.RegisterActor, [inst]);
+            }
+            
             foreach (var method in Current.OnStartMethods)
                 builder.BuildCall2(method, []);
             builder.BuildRetVoid();

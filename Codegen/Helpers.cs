@@ -35,6 +35,52 @@ internal static class Helpers
             return @const;
         }
     }
+
+    extension(LLVMTypeRef typeRef)
+    {
+        public static LLVMTypeRef CreateStruct(ReadOnlySpan<LLVMTypeRef> fields, bool packed, string name)
+        {
+            if (string.IsNullOrEmpty(name))
+                return LLVMTypeRef.CreateStruct(fields, packed);
+            else unsafe
+            {
+                using var n = new MarshaledString(name);
+                var strType = LLVM.StructCreateNamed(Generator.Current.Context, n);
+                if (fields.IsEmpty) return strType;
+                
+                LLVMOpaqueType** fieldsPtr = stackalloc LLVMOpaqueType*[fields.Length];
+                for (var i = 0; i < fields.Length; i++)
+                    fieldsPtr[i] = fields[i];
+
+                LLVM.StructSetBody(strType, fieldsPtr, (uint)fields.Length, packed ? 1 : 0);
+
+                return strType;
+            }
+        }
+    }
+
+    extension(LLVMValueRef valueRef)
+    {
+        public static LLVMValueRef CreateConst<T>(T value) where T : struct
+        {
+            return value switch
+            {
+                bool b => LLVMValueRef.CreateConstInt(Generator.Current.Context.Int1Type, b ? 1u : 0),
+                byte i8 => LLVMValueRef.CreateConstInt(Generator.Current.Context.Int8Type, i8),
+                char i8 => LLVMValueRef.CreateConstInt(Generator.Current.Context.Int8Type, i8),
+                ushort i16 => LLVMValueRef.CreateConstInt(Generator.Current.Context.Int16Type, i16),
+                uint i32 => LLVMValueRef.CreateConstInt(Generator.Current.Context.Int32Type, i32),
+                ulong i64 => LLVMValueRef.CreateConstInt(Generator.Current.Context.Int64Type, i64),
+                float f => LLVMValueRef.CreateConstReal(Generator.Current.Context.FloatType, f),
+                double d => LLVMValueRef.CreateConstReal(Generator.Current.Context.DoubleType, d),
+                sbyte i8 => LLVMValueRef.CreateConstInt(Generator.Current.Context.Int8Type, (ulong)i8),
+                short i16 => LLVMValueRef.CreateConstInt(Generator.Current.Context.Int16Type, (ulong)i16),
+                int i32 => LLVMValueRef.CreateConstInt(Generator.Current.Context.Int32Type, (ulong)i32),
+                long i64 => LLVMValueRef.CreateConstInt(Generator.Current.Context.Int64Type, (ulong)i64),
+                _ => throw new NotSupportedException($"Value of type {value.GetType()} is not supported")
+            };
+        }
+    }
     
     public static void BuildPrintLine(this LLVMBuilderRef builder, CharPointer text, string name = "") =>
         builder.BuildCall2(Generator.Current.Methods.Puts, [text], name);

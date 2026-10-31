@@ -4,6 +4,7 @@
 #include "pch.h"
 #include "libScratch.h"
 
+#include <list>
 #include <iostream>
 #include <ostream>
 
@@ -52,4 +53,16 @@ void looks_say(const char* target, const char* text)
 void looks_think(const char* target, const char* text)
 {
     std::cout << target << " is thinking: " << text << '\n';
+}
+
+static std::list<Actor*> actors;
+
+void scratch_init()
+{
+    actors = std::list<Actor*>();
+}
+
+void register_new_actor(Actor* actor)
+{
+    actors.push_back(actor);
 }
