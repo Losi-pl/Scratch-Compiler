@@ -13,7 +13,7 @@ internal class CodegenTools
     public LLVMBuilderRef Builder;
     public LibraryParts Libs = null!;
 
-    public ImmutableArray<LLVMMethod> OnStartMethods;
+    public FrozenDictionary<Target, (CodeBlock script, LLVMMethod method, bool defined, uint stackSize)[]> Scripts;
 
     public FrozenDictionary<Target, CharPointer> TargetNames = null!;
 }

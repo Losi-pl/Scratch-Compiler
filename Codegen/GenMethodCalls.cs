@@ -20,35 +20,33 @@ internal static class GenMethodCalls
     private static CodegenTools Current => Generator.Current;
     private static LLVMBuilderRef Builder => Generator.Current.Builder;
 
-    public static LLVMMethod GenerateMethod(Target target, CodeBlock script, string methodName)
+    public static uint GenerateScript(Target target, CodeBlock script, LLVMMethod method)
     {
         ResetConstVarCounters();
-        methodName = $"{target.Name}::{methodName}";
-        var declaration = Current.Module.AddFunction(methodName, _scriptsFunctionType);
-        var m = new LLVMMethod(declaration, _scriptsFunctionType, Current.Context.VoidType, [], false);
         
-        var currentBlock = declaration.AppendBasicBlock("entry");
+        var stackSize = 0u;
+        var currentBlock = method.Function.AppendBasicBlock("entry");
         Current.Builder.PositionAtEnd(currentBlock);
         
-        foreach (var method in script.Methods)
+        foreach (var operation in script.Methods)
         {
-            switch (method)
+            switch (operation)
             {
                 case Say say:
-                    BuildSayBlock(target, say, methodName);
+                    BuildSayBlock(target, say, method.Function.Name);
                     break;
                 case Think think:
-                    BuildThinkBlock(target, think, methodName);
+                    BuildThinkBlock(target, think, method.Function.Name);
                     break;
                         
                 default:
                     throw Generator.NotImplemented(method);
+                
             }  
         }
 
         Builder.BuildRetVoid();
-        
-        return m;
+        return stackSize;
     }
     
     public static void BuildSayBlock(Target target, Say say, string methodName)

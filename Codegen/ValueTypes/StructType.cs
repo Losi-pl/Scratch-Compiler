@@ -32,9 +32,9 @@ public struct StructType
         }
     }
     
-    public static StructType CreateListNode(LLVMTypeRef type, string contentName = "")
+    public static StructType CreateListHandler()
     {
-        var fullName = $"list::Node<{(string.IsNullOrEmpty(contentName) ? type.StructName : contentName)}>";
+        var fullName = "std::list";
         LLVMTypeRef listNode;
         {
             using var name = new MarshaledString(fullName);
@@ -44,7 +44,7 @@ public struct StructType
         var fields = new LLVMTypeRef[3];
         fields[0] = LLVMTypeRef.CreatePointer(listNode, 0);
         fields[1] = fields[0];
-        fields[2] = type;
+        fields[2] = Generator.Current.Context.CreatePointerType(0);
 
         unsafe
         {

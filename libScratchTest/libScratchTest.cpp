@@ -1,5 +1,6 @@
 #include <iostream>
 #include "../libScratch/libScratch.h"
+#include "../libScratch/Script.h"
 
 int main(int argc, char* argv[])
 {
@@ -13,14 +14,17 @@ int main(int argc, char* argv[])
     char str5[] = "kota";
     auto combined2 = combineStrings_3(str3, str4, str5);
     
-    std::cout << combined << '\n' << combined2;
+    std::cout << combined << '\n' << combined2 << '\n';
     
     scratch_init();
     
-    auto iter = begin_actor_iteration();
-    auto iter_size = sizeof(std::list<Actor*>::iterator);
+    std::cout << "sizeof(std::list<void*>) = " << sizeof(std::list<void*>) << '\n';
+    std::cout << "sizeof(std::list<void*>::iterator) = " << sizeof(std::list<void*>::iterator) << "\n\n";
     
-    std::cout << "sizeof(std::list<Actor*>::iterator) = " << iter_size << '\n';
+    
+    std::cout << "sizeof(Actor) = " << sizeof(Actor) << '\n';
+    std::cout << "sizeof(std::list<Actor>) = " << sizeof(std::list<Actor>) << '\n';
+    std::cout << "sizeof(std::list<Actor>::iterator) = " << sizeof(std::list<Actor>::iterator) << "\n\n";
     
     return 0;
 }

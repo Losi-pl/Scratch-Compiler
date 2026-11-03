@@ -55,34 +55,49 @@ void looks_think(const char* target, const char* text)
     std::cout << target << " is thinking: " << text << '\n';
 }
 
-static std::list<Actor*> actors;
+static std::list<void*> actors;  // NOLINT(bugprone-throwing-static-initialization, misc-use-anonymous-namespace)
 
-void scratch_init()
-{
-    actors = std::list<Actor*>();
-}
+std::list<void*>* get_actors() { return &actors; }
+void scratch_init() { actors = std::list<void*>(); }
+void register_new_actor(Actor* actor) { actors.push_back(actor); }
+std::list<void*>::iterator begin_actor_iteration() { return actors.begin(); }
+unsigned int actor_count() { return static_cast<unsigned int>(actors.size()); }
 
-void register_new_actor(Actor* actor)
+void* get_iteration_next(std::list<void*>::iterator& iterator, std::list<void*>& list, bool removeLast)
 {
-    actors.push_back(actor);
-}
-
-std::list<Actor*>::iterator begin_actor_iteration()
-{
-    return actors.begin();
-}
-
-Actor* next_actor(std::list<Actor*>::iterator* iterator)
-{
-    if (*iterator == actors.end())
+    if (iterator == list.end())
+    {
+        if (removeLast && iterator != list.begin())
+            list.erase(std::prev(iterator));
+        
         return nullptr;
+    }
 
-    Actor* result = **iterator;
-    ++(*iterator);
-    return result;
+    auto value = *iterator;
+    
+    if (removeLast && iterator != list.begin())
+    {
+        auto rem = list.erase(std::prev(iterator)); 
+        iterator = std::next(rem);
+    }
+    else
+        iterator = std::next(iterator);
+    
+    return value;
 }
 
-unsigned int actor_count()
+void run_scripts()
 {
-    return static_cast<unsigned int>(actors.size());
+    auto iter = begin_actor_iteration();
+    Actor* actor;
+    bool removeLastActor = false; // TODO: Not used, see if I find use for it
+    while ((actor = static_cast<Actor*>(get_iteration_next(iter, actors, removeLastActor))) != nullptr)
+    {
+        for (unsigned int i = 0; i < actor->script_count; ++i)
+        {
+            auto script = &actor->scripts[i];
+            auto func = reinterpret_cast<void (*)(void* stack, Actor* actor)>(script->method);
+            func(script->methodStack, actor);
+        }
+    }
 }
