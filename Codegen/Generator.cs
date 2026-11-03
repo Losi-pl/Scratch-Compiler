@@ -1,4 +1,5 @@
-﻿using System.Collections.Frozen;
+﻿#pragma warning disable CS8618
+using System.Collections.Frozen;
 using Humanizer;
 using LLVMSharp.Interop;
 using ScratchCompiler.Codegen.ValueTypes;
@@ -10,9 +11,7 @@ namespace ScratchCompiler.Codegen;
 
 public static class Generator
 {
-#pragma warning disable CS8618
     [ThreadStatic] internal static CodegenTools Current;
-#pragma warning restore CS8618
     
     public static LLVMSharp.Module GenerateCode(this SyntaxTree tree, string? projectName = null)
     {
