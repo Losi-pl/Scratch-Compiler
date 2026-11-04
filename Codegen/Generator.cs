@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8618
 using System.Collections.Frozen;
 using Humanizer;
+using LLVMSharp;
 using LLVMSharp.Interop;
 using ScratchCompiler.Codegen.ValueTypes;
 using ScratchCompiler.Parser;
@@ -38,7 +39,7 @@ public static class Generator
         LocalActorEnumerationBody(builder, actorEnumeration);
 
         DeclareScriptMethods(tree);
-        GenerateOnStartMethods(tree);
+        GenerateOnStartMethods();
         GenerateActorsDeclaration(builder, tree, actorSetup);
         
         // Build the body of `main`
@@ -48,8 +49,7 @@ public static class Generator
             
             builder.BuildCall2(Current.Libs.ScratchInit, []);
             builder.BuildCall2(actorSetup, []);
-            //builder.BuildCall2(actorEnumeration, []);
-            builder.BuildCall2(Current.Libs.RunScripts, []);
+            builder.BuildCall2(actorEnumeration, []);
 
             builder.BuildRetVoid();
         }
@@ -63,13 +63,14 @@ public static class Generator
 
     private static void LocalActorEnumerationBody(LLVMBuilderRef builder, LLVMMethod fun)
     {
+        var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer]);
         var mainBlock = fun.Function.AppendBasicBlock("entry");
+        fun.Function.AddAttributeAtIndex(LLVMAttributeIndex.LLVMAttributeFunctionIndex, Current.Context.CreateEnumAttribute("hot", 0));
         builder.PositionAtEnd(mainBlock);
-                                                                                                        // entry:
-        var iter = builder.BuildAlloca(Current.Libs.ListHandler, "iterator");          // Stackalloc iteration spot
-        var actors = builder.BuildCall2(Current.Libs.GetActors, [], "actors");             // Get the list
-
-        builder.BuildCall2(Current.Libs.GetActorIterator, [iter]);                                          // Get actor iterator
+                                                                                                            // entry:
+        var iter = builder.BuildAlloca(Current.Libs.ListHandler, "iterator");              // Stackalloc iteration spot
+        var actors = builder.BuildCall2(Current.Libs.GetActors, [], "actors");                 // Get the list
+        builder.BuildCall2(Current.Libs.GetActorIterator, [iter]);                                              // Get actor iterator
 
         // ReSharper disable InconsistentNaming
         var loop_test = fun.Function.AppendBasicBlock("loop_test");
@@ -78,22 +79,21 @@ public static class Generator
 
         var exit = fun.Function.AppendBasicBlock("exit");
 
-        builder.BuildBr(loop_test);                                                                         // entry -> loop_test
-        builder.PositionAtEnd(loop_test);                                                               // loop_test:
-        var actor = builder.BuildCall2(Current.Libs.IterateNext,                                // Get next actor
-            [iter, actors, LLVMValueRef.CreateConst(false)], "actor");                                 // ^^^
-        var nullptr = LLVMValueRef.CreateConstPointerNull(Current.Libs.ActorStruct.Pointer);                // Const: nullptr
-        var condition = builder.BuildICmp(                                                      // is {actor == null}
-            LLVMIntPredicate.LLVMIntNE, actor, nullptr, "condition");                   // ^^
-        builder.BuildCondBr(condition, loop_body, exit);                                           // if condition goto loop_body else exit
+        builder.BuildBr(loop_test);                                                                             // entry -> loop_test
+        builder.PositionAtEnd(loop_test);                                                                   // loop_test:
+        var actor = builder.BuildCall2(Current.Libs.IterateNext,                                    // Get next actor
+            [iter, actors, LLVMValueRef.CreateConst(false)], "actor");                                     // ^^^
+        var nullptr = LLVMValueRef.CreateConstPointerNull(Current.Libs.ActorStruct.Pointer);                    // Const: nullptr
+        var condition = builder.BuildICmp(                                                          // is {actor == null}
+            LLVMIntPredicate.LLVMIntNE, actor, nullptr, "condition");                       // ^^
+        builder.BuildCondBr(condition, loop_body, exit);                                               // if condition goto loop_body else exit
 
-        builder.PositionAtEnd(loop_body);                                                               // loop_body:
-        var charPtr = LLVMTypeRef.CreatePointer(Current.Context.Int8Type, 0);                   // char*
-        var actorNameField = builder.BuildStructGEP2(Current.Libs.ActorStruct, actor, 0);// Actor -> Name
-        var actorName = builder.BuildLoad2(charPtr, actorNameField, "actor_name");        // Get actor name
-        builder.BuildPrintLine(actorName);                                                               // Print(Actor->Name)
-
-        builder.BuildBr(loop_test);                                                                         // Loop back
+        builder.PositionAtEnd(loop_body);                                                                   // loop_body:
+        var enginePtr = builder.BuildStructGEP2(                                                    // field: Actor.engine_method
+            Current.Libs.ActorStruct, actor, 3, "method*");                                        // ^^^
+        var engine = builder.BuildLoad2(Current.Libs.PointerType, enginePtr, "engine");       // Get engine method
+        builder.BuildCall2(engineType, engine, [actor]);                                                        // engine(actor);
+        builder.BuildBr(loop_test);                                                                             // Loop back
 
         builder.PositionAtEnd(exit);
         builder.BuildRetVoid();
@@ -110,11 +110,13 @@ public static class Generator
     private static void DeclareScriptMethods(SyntaxTree tree)
     {
         var args = new[] {
-                Current.Libs.PointerType,           // void* scripts_internal_args
                 Current.Libs.ActorStruct.Pointer,   // Actor* actor
+                Current.Libs.PointerType,           // void* scripts_internal_args
+                Current.Libs.PointerType            // i32* point_in_script
             };
-        var funType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, args, false);
-        Dictionary<Target, (CodeBlock script, LLVMMethod method, bool defined, uint stackSize)[]> scriptList = [];
+        var scriptType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, args);
+        var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer]);
+        Dictionary<Target, ((CodeBlock script, LLVMMethod method, bool defined, uint stackSize)[] scripts, LLVMMethod engine)> scriptList = [];
         
         foreach (var target in tree.GetAllTargets())
         {
@@ -145,19 +147,43 @@ public static class Generator
                     _ => throw NotImplemented(script.Entry)
                 }}::Body";
                 
-                var fun = Current.Module.AddFunction(name, funType);
-                scripts.Add((script, new(fun, funType, Current.Context.VoidType, args, false), false, 0));
+                var scriptFun = Current.Module.AddFunction(name, scriptType);
+                scripts.Add((script, new(scriptFun, scriptType, Current.Context.VoidType, args, false), false, 0));
                 
-                unsafe
-                {
-                    using var stackArg = new MarshaledString("scripts_stack");
-                    LLVM.SetValueName(LLVM.GetParam(fun, 0), stackArg);
-                    using var actorArg = new MarshaledString("actor");
-                    LLVM.SetValueName(LLVM.GetParam(fun, 1), actorArg);
-                }
+                scriptFun.GetParam(0).Name = "actor";
+                scriptFun.GetParam(1).Name = "scripts_stack";
+                scriptFun.GetParam(2).Name = "goto_point";
             }
+            
+            var engineFun = Current.Module.AddFunction($"{target.Name}::Engine", engineType);
+            
+            {
+                engineFun.GetParam(0).Name = "Actor";
+                var blocks = scripts.Select((m, i) =>
+                {
+                    var name = m.method.Function.Name;
+                    name = name[(name.IndexOf(':') + 2)..(name.LastIndexOf(':') - 1)];
+                    return name;
+                }).ToArray();
+                var entry = engineFun.AppendBasicBlock("entry");
+                Current.Builder.PositionAtEnd(entry);
+                var scriptField = Current.Builder.BuildStructGEP2(Current.Libs.ActorStruct, engineFun.FirstParam, 3);
+                var scriptsPtr = Current.Builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptField, "Scripts");
 
-            scriptList[target] = scripts.ToArray();
+                for (uint i = 0; i < scripts.Count; i++)
+                {
+                    var scriptPtr = Current.Builder.BuildGEP2(Current.Libs.ScriptHolder, scriptsPtr, stackalloc[] {LLVMValueRef.CreateConst(i)}, $"Script[{i}]");
+                    var stackPtr = Current.Builder.BuildStructGEP2(Current.Libs.ScriptHolder, scriptPtr, 2);
+                    var stack = Current.Builder.BuildLoad2(Current.Libs.PointerType, stackPtr, $"Script[{i}]::Stack");
+                    var @goto = Current.Builder.BuildStructGEP2(Current.Libs.ScriptHolder, scriptPtr, 0, $"Script[{i}]::GOTO");
+                    Current.Builder.BuildCall2(scripts[(int)i].method, [engineFun.GetParam(0), stack, @goto]);
+                }
+                Current.Builder.BuildRetVoid();
+            }
+            
+
+            scriptList[target] = (scripts.ToArray(), new(engineFun, engineType, Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer], false));
+            
         }
 
         Current.Scripts = scriptList.ToFrozenDictionary();
@@ -184,38 +210,39 @@ public static class Generator
 
             var scripts = Current.Scripts[actor];
 
-            var posX = LLVMValueRef.CreateConst(actor.DefaultPosition.x);                                   // Const: Start position x
-            var posY = LLVMValueRef.CreateConst(actor.DefaultPosition.y);                                   // Const: Start position y
-            var scriptCount = LLVMValueRef.CreateConst(scripts.Length);                                     // Const: Count of actor scripts
-            var inst = builder.BuildCall2(Current.Libs.Malloc, [actorSize], actor.Name);        // Allocate space for an Actor
-            builder.BuildCall2(Current.Libs.RegisterActor, [inst]);                                         // Register the actor
-            builder.BuildCall2(Current.Libs.ConstructActor,                                                 // Construct actor's body
-                [inst, Current.TargetNames[actor], posX, posY, scriptCount]);                               // ^^^
+            var posX = LLVMValueRef.CreateConst(actor.DefaultPosition.x);                                               // Const: Start position x
+            var posY = LLVMValueRef.CreateConst(actor.DefaultPosition.y);                                               // Const: Start position y
+            var scriptCount = LLVMValueRef.CreateConst(scripts.scripts.Length);                                         // Const: Count of actor scripts
+            var inst = builder.BuildCall2(Current.Libs.Malloc, [actorSize], actor.Name);                    // Allocate space for an Actor
+            builder.BuildCall2(Current.Libs.RegisterActor, [inst]);                                                     // Register the actor
+            builder.BuildCall2(Current.Libs.ConstructActor,                                                             // Construct actor's body
+                [inst, Current.TargetNames[actor], Current.Scripts[actor].engine.Function, posX, posY, scriptCount]);   // ^^^
 
-            var scriptField = builder.BuildStructGEP2(Current.Libs.ActorStruct, inst, 3);// Find field of script array
-            var scriptArray = builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptField,// Get script list
-                    $"{actor.Name}::Scripts");                                                        // ^^^
+            var scriptField = builder.BuildStructGEP2(Current.Libs.ActorStruct, inst, 4);            // Find field of script array
+            var scriptArray = builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptField,            // Get script list
+                    $"{actor.Name}::Scripts");                                                                    // ^^^
 
-            for (int i = 0; i < scripts.Length; i++)
+            for (int i = 0; i < scripts.scripts.Length; i++)
             {
-                ref var script = ref scripts[i];
-                var scriptPtr = builder.BuildGEP2(Current.Libs.ScriptHolder, scriptArray,    // Scripts[i]
-                    new[] { LLVMValueRef.CreateConst(i) }, $"{actor.Name}::Script[{i}]");      // ^^^
-                builder.BuildCall2(Current.Libs.ConstructScript,                                            // Construct script handler
-                    [scriptPtr, script.method.Function, LLVMValueRef.CreateConst(script.stackSize)]);       // ^^^
+                ref var script = ref scripts.scripts[i];
+                var scriptPtr = builder.BuildGEP2(Current.Libs.ScriptHolder, scriptArray,     // Scripts[i]
+                    new[] { LLVMValueRef.CreateConst(i) }, $"{actor.Name}::Script[{i}]");       // ^^^
+                
+                builder.BuildCall2(Current.Libs.ConstructScript,                                             // Construct script handler
+                    [scriptPtr, LLVMValueRef.CreateConst(script.stackSize)]);                                // ^^^
             }
         }
 
         builder.BuildRetVoid();
     }
 
-    private static void GenerateOnStartMethods(SyntaxTree tree)
+    private static void GenerateOnStartMethods()
     {
         foreach (var target in Current.Scripts)
         {
-            for (int i = 0; i < target.Value.Length; i++)
+            for (int i = 0; i < target.Value.scripts.Length; i++)
             {
-                ref var method = ref target.Value[i];
+                ref var method = ref target.Value.scripts[i];
                 if(method.script.Entry is not OnStart)
                     continue;
                 

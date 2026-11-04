@@ -85,19 +85,3 @@ void* get_iteration_next(std::list<void*>::iterator& iterator, std::list<void*>&
     
     return value;
 }
-
-void run_scripts()
-{
-    auto iter = begin_actor_iteration();
-    Actor* actor;
-    bool removeLastActor = false; // TODO: Not used, see if I find use for it
-    while ((actor = static_cast<Actor*>(get_iteration_next(iter, actors, removeLastActor))) != nullptr)
-    {
-        for (unsigned int i = 0; i < actor->script_count; ++i)
-        {
-            auto script = &actor->scripts[i];
-            auto func = reinterpret_cast<void (*)(void* stack, Actor* actor)>(script->method);
-            func(script->methodStack, actor);
-        }
-    }
-}

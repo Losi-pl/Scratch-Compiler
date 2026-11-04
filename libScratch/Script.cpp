@@ -2,10 +2,11 @@
 #include "Script.h"
 
 #include <cstring>
+#include <iostream>
+#include <ostream>
 
-Script::Script(void* method, unsigned int stackSize)
-{
-    this->method = method;
+Script::Script(unsigned int stackSize)
+{ 
     this->scriptPoint = 0;
     this->stackSize = stackSize;
     if (stackSize > 0)
