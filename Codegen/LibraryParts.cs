@@ -28,6 +28,8 @@ internal class LibraryParts
     public readonly LLVMMethod IterateNext;
     
     public readonly LLVMMethod ConstructScript;
+
+    public readonly LLVMAttributeRef HotAttribute;
     
     #region Motion
 
@@ -92,5 +94,7 @@ internal class LibraryParts
 
         LooksSay = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_say", [charPtr, charPtr]);
         LooksThink = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_think", [charPtr, charPtr]);
+
+        HotAttribute = Generator.Current.Context.CreateEnumAttribute("hot", 0);
     }
 }

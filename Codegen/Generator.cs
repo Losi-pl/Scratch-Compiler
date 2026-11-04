@@ -64,7 +64,7 @@ public static class Generator
     {
         var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer]);
         var mainBlock = fun.Function.AppendBasicBlock("entry");
-        fun.Function.AddAttributeAtIndex(LLVMAttributeIndex.LLVMAttributeFunctionIndex, Current.Context.CreateEnumAttribute("hot", 0));
+        fun.Function.AddAttributeAtIndex(LLVMAttributeIndex.LLVMAttributeFunctionIndex, Current.Libs.HotAttribute);
         builder.PositionAtEnd(mainBlock);
                                                                                                             // entry:
         var iter = builder.BuildAlloca(Current.Libs.ListHandler, "iterator");              // Stackalloc iteration spot
@@ -158,6 +158,7 @@ public static class Generator
             
             {
                 engineFun.GetParam(0).Name = "Actor";
+                engineFun.AddAttributeAtIndex(LLVMAttributeIndex.LLVMAttributeFunctionIndex, Current.Libs.HotAttribute);
                 var blocks = scripts.Select((m, i) =>
                 {
                     var name = m.method.Function.Name;
