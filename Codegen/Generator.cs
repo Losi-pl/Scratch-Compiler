@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8618
 using System.Collections.Frozen;
 using Humanizer;
-using LLVMSharp;
 using LLVMSharp.Interop;
 using ScratchCompiler.Codegen.ValueTypes;
 using ScratchCompiler.Parser;
@@ -163,27 +162,45 @@ public static class Generator
                 {
                     var name = m.method.Function.Name;
                     name = name[(name.IndexOf(':') + 2)..(name.LastIndexOf(':') - 1)];
-                    return name;
+                    var test = i == 0 ? "entry" : name + "::Test";
+                    var call = name + "::Call";
+                    return (Test: engineFun.AppendBasicBlock(test), Call: engineFun.AppendBasicBlock(call));
                 }).ToArray();
-                var entry = engineFun.AppendBasicBlock("entry");
-                Current.Builder.PositionAtEnd(entry);
-                var scriptField = Current.Builder.BuildStructGEP2(Current.Libs.ActorStruct, engineFun.FirstParam, 3);
-                var scriptsPtr = Current.Builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptField, "Scripts");
-
-                for (uint i = 0; i < scripts.Count; i++)
+                if (blocks.Length == 0)
                 {
-                    var scriptPtr = Current.Builder.BuildGEP2(Current.Libs.ScriptHolder, scriptsPtr, stackalloc[] {LLVMValueRef.CreateConst(i)}, $"Script[{i}]");
-                    var stackPtr = Current.Builder.BuildStructGEP2(Current.Libs.ScriptHolder, scriptPtr, 2);
-                    var stack = Current.Builder.BuildLoad2(Current.Libs.PointerType, stackPtr, $"Script[{i}]::Stack");
-                    var @goto = Current.Builder.BuildStructGEP2(Current.Libs.ScriptHolder, scriptPtr, 0, $"Script[{i}]::GOTO");
-                    Current.Builder.BuildCall2(scripts[(int)i].method, [engineFun.GetParam(0), stack, @goto]);
+                    var block = engineFun.AppendBasicBlock("entry");
+                    Current.Builder.PositionAtEnd(block);
+                    Current.Builder.BuildRetVoid();
                 }
-                Current.Builder.BuildRetVoid();
+                else
+                {
+                    var exit = engineFun.AppendBasicBlock("exit");
+                    Current.Builder.PositionAtEnd(blocks[0].Test);
+                    var scriptField = Current.Builder.BuildStructGEP2(Current.Libs.ActorStruct, engineFun.FirstParam, 4);
+                    var scriptsPtr = Current.Builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptField, "Scripts");
+
+                    for (uint i = 0; i < scripts.Count; i++)
+                    {
+                        var @goto = Current.Builder.BuildGEP2(Current.Libs.ScriptHolder, scriptsPtr, stackalloc[] {LLVMValueRef.CreateConst(i), LLVMValueRef.CreateConst(0)}, $"Script[{i}]::GOTO");
+                        var gotoVal = Current.Builder.BuildLoad2(Current.Context.Int32Type, @goto);
+                        var isRunning = Current.Builder.BuildICmp(LLVMIntPredicate.LLVMIntNE, gotoVal, LLVMValueRef.CreateConst<uint>(0), $"Script[{i}]::Running");
+                        Current.Builder.BuildCondBr(isRunning, blocks[i].Call, i != scripts.Count - 1 ? blocks[i + 1].Test : exit);
+                        
+                        Current.Builder.PositionAtEnd(blocks[i].Call);
+                        var scriptPtr = Current.Builder.BuildGEP2(Current.Libs.ScriptHolder, scriptsPtr, stackalloc[] {LLVMValueRef.CreateConst(i)}, $"Script[{i}]");
+                        var stackPtr = Current.Builder.BuildStructGEP2(Current.Libs.ScriptHolder, scriptPtr, 2);
+                        var stack = Current.Builder.BuildLoad2(Current.Libs.PointerType, stackPtr, $"Script[{i}]::Stack");
+                        Current.Builder.BuildCall2(scripts[(int)i].method, [engineFun.GetParam(0), stack, @goto]);
+                        Current.Builder.BuildBr(i != scripts.Count - 1 ? blocks[i + 1].Test : exit);
+                        if(i != scripts.Count - 1)
+                            Current.Builder.PositionAtEnd(blocks[i + 1].Test);
+                    }
+                    Current.Builder.PositionAtEnd(exit);
+                    Current.Builder.BuildRetVoid();
+                }
             }
             
-
             scriptList[target] = (scripts.ToArray(), new(engineFun, engineType, Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer], false));
-            
         }
 
         Current.Scripts = scriptList.ToFrozenDictionary();
@@ -198,13 +215,13 @@ public static class Generator
         {
             if (entryBlock.HasValue)
             {
-                entryBlock = actorSetup.Function.AppendBasicBlock("Init: " + actor.Name);
+                entryBlock = actorSetup.Function.AppendBasicBlock("Construct: " + actor.Name);
                 builder.BuildBr(entryBlock.Value);
                 builder.PositionAtEnd(entryBlock.Value);
             }
             else
             {
-                entryBlock = actorSetup.Function.AppendBasicBlock("Init: " + actor.Name);
+                entryBlock = actorSetup.Function.AppendBasicBlock("Construct: " + actor.Name);
                 builder.PositionAtEnd(entryBlock.Value);
             }
 
