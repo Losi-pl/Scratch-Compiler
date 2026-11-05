@@ -1,4 +1,5 @@
-﻿using LLVMSharp.Interop;
+﻿using System.Collections.Immutable;
+using LLVMSharp.Interop;
 using ScratchCompiler.Codegen.ValueTypes;
 using ScratchCompiler.Parser;
 using ScratchCompiler.Parser.Functions.Looks;
@@ -6,11 +7,18 @@ using ScratchCompiler.Parser.Operations;
 
 namespace ScratchCompiler.Codegen;
 
-internal static class GenMethodCalls
+internal static class GenScript
 {
     private static int _conStrCount;
 
-    private static readonly LLVMTypeRef _scriptsFunctionType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, []);
+    // ReSharper disable once UseCollectionExpression
+    public static readonly ImmutableArray<LLVMTypeRef> ScriptBodyArgs = new[] {
+        Current.Libs.ActorStruct.Pointer, // Actor* actor
+        Current.Libs.PointerType,         // void* scripts_internal_args
+        Current.Libs.PointerType          // i32* point_in_script
+    }.ToImmutableArray();
+    
+    public static readonly LLVMTypeRef ScriptBodyType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [..ScriptBodyArgs]);
     
     public static void ResetConstVarCounters()
     {

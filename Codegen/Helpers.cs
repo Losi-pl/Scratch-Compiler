@@ -13,7 +13,6 @@ internal static class Helpers
         
         return builder.BuildCall2(method.FunctionType, method.Function, args, name);
     }
-    
     public static LLVMValueRef CreateGlobalConstString(this in LLVMBuilderRef _, string value, string name = "")
     {
         ArgumentNullException.ThrowIfNull(value);
