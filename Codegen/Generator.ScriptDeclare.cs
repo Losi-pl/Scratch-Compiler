@@ -10,7 +10,7 @@ partial class Generator
     private static void DeclareScriptMethods(SyntaxTree tree)
     {
         var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer]);
-        Dictionary<Target, ((CodeBlock script, LLVMMethod method, bool defined, uint stackSize)[] scripts, LLVMMethod engine)> scriptList = [];
+        Dictionary<Target, (ScriptData[] scripts, LLVMMethod engine)> scriptList = [];
         
         foreach (var target in tree.GetAllTargets())
         {
@@ -22,7 +22,7 @@ partial class Generator
             var onGraterThan = 0u;
             var onKeyPress = 0u;
 
-            List<(CodeBlock script, LLVMMethod method, bool defined, uint stackSize)> scripts = [];
+            List<ScriptData> scripts = [];
             
             foreach (var script in target.Blocks)
             {
@@ -42,7 +42,7 @@ partial class Generator
                 }}";
                 
                 var scriptFun = Current.Module.AddFunction(name, GenScript.ScriptBodyType);
-                scripts.Add((script, new(scriptFun, GenScript.ScriptBodyType, Current.Context.VoidType, 
+                scripts.Add(new(script, new(scriptFun, GenScript.ScriptBodyType, Current.Context.VoidType, 
                     [..GenScript.ScriptBodyArgs], false), false, 0));
                 
                 scriptFun.GetParam(0).Name = "actor";
@@ -57,7 +57,7 @@ partial class Generator
                 engineFun.AddAttributeAtIndex(LLVMAttributeIndex.LLVMAttributeFunctionIndex, Current.Libs.HotAttribute);
                 var blocks = scripts.Select((m, i) =>
                 {
-                    var name = m.method.Function.Name;
+                    var name = m.Function.Function.Name;
                     name = name[(name.IndexOf(':') + 2)..];
                     var test = i == 0 ? "entry" : name + "::Test";
                     var call = name + "::Call";
@@ -89,7 +89,7 @@ partial class Generator
                                 { LLVMValueRef.CreateConst(i) }, $"Script[{i}]");                                                        // ^^^
                         var stackPtr = Current.Builder.BuildStructGEP2(Current.Libs.ScriptHolder, scriptPtr, 2);            // Field: Script.stack
                         var stack = Current.Builder.BuildLoad2(Current.Libs.PointerType, stackPtr, $"Script[{i}]::Stack");   // Get stack ptr
-                        Current.Builder.BuildCall2(scripts[(int)i].method, [engineFun.GetParam(0), stack, @goto]);                             // Invoke Script
+                        Current.Builder.BuildCall2(scripts[(int)i].Function, [engineFun.GetParam(0), stack, @goto]);                             // Invoke Script
                         Current.Builder.BuildBr(i != scripts.Count - 1 ? blocks[i + 1].Test : exit);                                           // Goto next Test
                         if(i != scripts.Count - 1) Current.Builder.PositionAtEnd(blocks[i + 1].Test);
                     }

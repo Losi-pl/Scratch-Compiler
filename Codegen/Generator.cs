@@ -111,7 +111,7 @@ public static partial class Generator
                 var scriptPtr = builder.BuildGEP2(Current.Libs.ScriptHolder, scriptArray,     // Scripts[i]
                     new[] { LLVMValueRef.CreateConst(i) }, $"{actor.Name}::Script[{i}]");       // ^^^
                 builder.BuildCall2(Current.Libs.ConstructScript,                                             // Construct script handler
-                    [scriptPtr, LLVMValueRef.CreateConst(script.stackSize)]);                                // ^^^
+                    [scriptPtr, LLVMValueRef.CreateConst(script.StackSize)]);                                // ^^^
             }
         }
 
@@ -125,11 +125,11 @@ public static partial class Generator
             for (int i = 0; i < target.Value.scripts.Length; i++)
             {
                 ref var method = ref target.Value.scripts[i];
-                if(method.script.Entry is not OnStart)
+                if(method.Script.Entry is not OnStart)
                     continue;
                 
-                method.stackSize = GenScript.GenerateScript(target.Key, method.script, method.method);
-                method.defined = true;
+                method.StackSize = GenScript.GenerateScript(target.Key, method.Script, method.Function);
+                method.IsDefined = true;
             }
         }
 
