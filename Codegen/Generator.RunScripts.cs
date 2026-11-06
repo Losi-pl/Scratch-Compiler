@@ -4,10 +4,14 @@ namespace ScratchCompiler.Codegen;
 
 partial class Generator
 {
-    private static void LocalActorEnumerationBody(LLVMBuilderRef builder, LLVMMethod fun)
+    private static LLVMMethod GenActorEnumerationBody(LLVMBuilderRef builder)
     {
+        var lambdaType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.PointerType, Current.Libs.PointerType]);
+        var fun = LLVMMethod.CreateMethod(Current.Context.VoidType, "actor_enumeration", [Current.Libs.PointerType, Current.Libs.PointerType]);
         fun.Function.AddAttributeAtIndex(LLVMAttributeIndex.LLVMAttributeFunctionIndex, Current.Libs.HotAttribute);
-        var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer]);
+        fun.Function.GetParam(0).Name = "lambda";
+        fun.Function.GetParam(1).Name = "lambda_env";
+        
         // ReSharper disable InconsistentNaming
         var mainBlock = fun.Function.AppendBasicBlock("entry");                                 // Label: Entry
         var loop_test = fun.Function.AppendBasicBlock("loop_test");             // Label: Loop test
@@ -18,23 +22,36 @@ partial class Generator
         var iter = builder.BuildAlloca(Current.Libs.ListHandler, "iterator");        // Stackalloc iteration spot
         var actors = builder.BuildCall2(Current.Libs.GetActors, [], "actors");           // Get the list
         builder.BuildCall2(Current.Libs.GetActorIterator, [iter]);                                        // Get actor iterator
-        builder.BuildBr(loop_test);                                                                       // entry -> loop_test
-        builder.PositionAtEnd(loop_test);                                                             // loop_test:
+        builder.BuildBr(loop_test); builder.PositionAtEnd(loop_test);                                 // loop_test:
         var actor = builder.BuildCall2(Current.Libs.IterateNext,                              // Get next actor
             [iter, actors, LLVMValueRef.CreateConst(false)], "actor");                               // ^^^
         var nullptr = LLVMValueRef.CreateConstPointerNull(Current.Libs.ActorStruct.Pointer);              // Const: nullptr
         var condition = builder.BuildICmp(                                                    // is {actor == null}
             LLVMIntPredicate.LLVMIntNE, actor, nullptr, "condition");                 // ^^
         builder.BuildCondBr(condition, loop_body, exit);                                         // goto condition ? loop_body : exit
-
         builder.PositionAtEnd(loop_body);                                                             // loop_body:
-        var enginePtr = builder.BuildStructGEP2(                                              // field: Actor.engine_method
-            Current.Libs.ActorStruct, actor, 3, "method*");                                  // ^^^
-        var engine = builder.BuildLoad2(Current.Libs.PointerType, enginePtr, "engine"); // Get engine method
-        builder.BuildCall2(engineType, engine, [actor]);                                                  // engine(actor);
+        builder.BuildCall2(lambdaType, fun.Function.GetParam(0), [actor, fun.Function.GetParam(1)]);   // Lambda(actor)
         builder.BuildBr(loop_test);                                                                       // Loop back
-
         builder.PositionAtEnd(exit);                                                                  // exit:
-        builder.BuildRetVoid();                                                                           // return;
+        builder.BuildRetVoid();                                                                           // Return;
+
+        return fun;
+    }
+
+    private static LLVMMethod GenRunScriptUpdates()
+    {
+        var lambda = LLVMMethod.CreateMethod(Current.Context.VoidType, "run_actor_scripts", [Current.Libs.PointerType, Current.Libs.PointerType]);
+        var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.PointerType]);
+        var main = lambda.Function.AppendBasicBlock("main");
+        var actor = lambda.Function.GetParam(0); actor.Name = "actor";
+        Current.Builder.PositionAtEnd(main);
+        var builder = Current.Builder;
+        
+        var enginePtr = builder.BuildStructGEP2(Current.Libs.ActorStruct, actor, 3, "method*"); // field: Actor.engine_method
+        var engine = builder.BuildLoad2(Current.Libs.PointerType, enginePtr, "engine");                // Get engine method
+        builder.BuildCall2(engineType, engine, [actor]);                                                                 // engine(actor);
+        builder.BuildRetVoid();                                                                                          // Return
+        
+        return lambda;
     }
 }

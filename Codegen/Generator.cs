@@ -34,8 +34,8 @@ public static partial class Generator
         
         var main = LLVMMethod.CreateMethod(context.VoidType, "main", []);
         var actorSetup = LLVMMethod.CreateMethod(context.VoidType, "actor_setup", []);
-        var actorEnumeration = LLVMMethod.CreateMethod(context.VoidType, "actor_enumeration", []);
-        LocalActorEnumerationBody(builder, actorEnumeration);
+        var actorEnumeration = GenActorEnumerationBody(builder);
+        var scriptUpdates = GenRunScriptUpdates();
 
         DeclareScriptMethods(tree);
         GenerateOnStartMethods();
@@ -43,12 +43,13 @@ public static partial class Generator
         
         // Build the body of `main`
         {
-            var mainBlock = main.Function.AppendBasicBlock("entry");
+            
+            var mainBlock = main.Function.AppendBasicBlock("main");
             builder.PositionAtEnd(mainBlock);
             
             builder.BuildCall2(Current.Libs.ScratchInit, []);
             builder.BuildCall2(actorSetup, []);
-            builder.BuildCall2(actorEnumeration, []);
+            builder.BuildCall2(actorEnumeration, [scriptUpdates.Function, LLVMValueRef.CreateConstPointerNull(Current.Libs.PointerType)]);
 
             builder.BuildRetVoid();
         }
