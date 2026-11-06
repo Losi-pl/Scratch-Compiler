@@ -42,7 +42,8 @@ partial class Generator
                 }}";
                 
                 var scriptFun = Current.Module.AddFunction(name, GenScript.ScriptBodyType);
-                scripts.Add((script, new(scriptFun, GenScript.ScriptBodyType, Current.Context.VoidType, [..GenScript.ScriptBodyArgs], false), false, 0));
+                scripts.Add((script, new(scriptFun, GenScript.ScriptBodyType, Current.Context.VoidType, 
+                    [..GenScript.ScriptBodyArgs], false), false, 0));
                 
                 scriptFun.GetParam(0).Name = "actor";
                 scriptFun.GetParam(1).Name = "scripts_stack";
@@ -71,28 +72,29 @@ partial class Generator
                 else
                 {
                     var exit = engineFun.AppendBasicBlock("exit");
-                    Current.Builder.PositionAtEnd(blocks[0].Test);
-                    var scriptField = Current.Builder.BuildStructGEP2(Current.Libs.ActorStruct, engineFun.FirstParam, 4);
-                    var scriptsPtr = Current.Builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptField, "Scripts");
+                    Current.Builder.PositionAtEnd(blocks[0].Test);                                                                         // ::Text
+                    var scriptField = Current.Builder.BuildStructGEP2(Current.Libs.ActorStruct, engineFun.FirstParam, 4);   // Field: Scripts
+                    var scriptsPtr = Current.Builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptField, "Scripts");  // Get Scripts[]
 
                     for (uint i = 0; i < scripts.Count; i++)
-                    {
-                        var @goto = Current.Builder.BuildGEP2(Current.Libs.ScriptHolder, scriptsPtr, stackalloc[] {LLVMValueRef.CreateConst(i), LLVMValueRef.CreateConst(0)}, $"Script[{i}]::GOTO");
-                        var gotoVal = Current.Builder.BuildLoad2(Current.Context.Int32Type, @goto);
-                        var isRunning = Current.Builder.BuildICmp(LLVMIntPredicate.LLVMIntNE, gotoVal, LLVMValueRef.CreateConst<uint>(0), $"Script[{i}]::Running");
-                        Current.Builder.BuildCondBr(isRunning, blocks[i].Call, i != scripts.Count - 1 ? blocks[i + 1].Test : exit);
-                        
-                        Current.Builder.PositionAtEnd(blocks[i].Call);
-                        var scriptPtr = Current.Builder.BuildGEP2(Current.Libs.ScriptHolder, scriptsPtr, stackalloc[] {LLVMValueRef.CreateConst(i)}, $"Script[{i}]");
-                        var stackPtr = Current.Builder.BuildStructGEP2(Current.Libs.ScriptHolder, scriptPtr, 2);
-                        var stack = Current.Builder.BuildLoad2(Current.Libs.PointerType, stackPtr, $"Script[{i}]::Stack");
-                        Current.Builder.BuildCall2(scripts[(int)i].method, [engineFun.GetParam(0), stack, @goto]);
-                        Current.Builder.BuildBr(i != scripts.Count - 1 ? blocks[i + 1].Test : exit);
-                        if(i != scripts.Count - 1)
-                            Current.Builder.PositionAtEnd(blocks[i + 1].Test);
+                    {                                                                                                                      // ::Test
+                        var @goto = Current.Builder.BuildGEP2(Current.Libs.ScriptHolder, scriptsPtr, stackalloc[]               // Field: Scripts[i].break_point
+                                { LLVMValueRef.CreateConst(i), LLVMValueRef.CreateConst(0) }, $"Script[{i}]::GOTO");                     // ^^^
+                        var gotoVal = Current.Builder.BuildLoad2(Current.Context.Int32Type, @goto);                                // GOTO = Get Scripts[i].break_point
+                        var isRunning = Current.Builder.BuildICmp(LLVMIntPredicate.LLVMIntNE, gotoVal,                    // Is script running
+                            LLVMValueRef.CreateConst<uint>(0), $"Script[{i}]::Running");                                            // ^^ (GOTO > 0)
+                        Current.Builder.BuildCondBr(isRunning, blocks[i].Call, i != scripts.Count - 1 ? blocks[i + 1].Test : exit);   // if running goto Call else Next Test
+                        Current.Builder.PositionAtEnd(blocks[i].Call);                                                                     // ::Call
+                        var scriptPtr = Current.Builder.BuildGEP2(Current.Libs.ScriptHolder, scriptsPtr, stackalloc[]           // Get Script[i]
+                                { LLVMValueRef.CreateConst(i) }, $"Script[{i}]");                                                        // ^^^
+                        var stackPtr = Current.Builder.BuildStructGEP2(Current.Libs.ScriptHolder, scriptPtr, 2);            // Field: Script.stack
+                        var stack = Current.Builder.BuildLoad2(Current.Libs.PointerType, stackPtr, $"Script[{i}]::Stack");   // Get stack ptr
+                        Current.Builder.BuildCall2(scripts[(int)i].method, [engineFun.GetParam(0), stack, @goto]);                             // Invoke Script
+                        Current.Builder.BuildBr(i != scripts.Count - 1 ? blocks[i + 1].Test : exit);                                           // Goto next Test
+                        if(i != scripts.Count - 1) Current.Builder.PositionAtEnd(blocks[i + 1].Test);
                     }
-                    Current.Builder.PositionAtEnd(exit);
-                    Current.Builder.BuildRetVoid();
+                    Current.Builder.PositionAtEnd(exit);                                                                                   // Exit
+                    Current.Builder.BuildRetVoid();                                                                                            // Return;
                 }
             }
             

@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using LLVMSharp.Interop;
+﻿using LLVMSharp.Interop;
 using ScratchCompiler.Codegen.ValueTypes;
 
 namespace ScratchCompiler.Codegen;
