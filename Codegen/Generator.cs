@@ -95,19 +95,19 @@ public static partial class Generator
             var scripts = Current.Scripts[actor];
             var posX = LLVMValueRef.CreateConst(actor.DefaultPosition.x);                                             // Const: Start position x
             var posY = LLVMValueRef.CreateConst(actor.DefaultPosition.y);                                             // Const: Start position y
-            var scriptCount = LLVMValueRef.CreateConst(scripts.scripts.Length);                                       // Const: Count of actor scripts
+            var scriptCount = LLVMValueRef.CreateConst(scripts.Scripts.Length);                                       // Const: Count of actor scripts
             
             var inst = builder.BuildCall2(Current.Libs.Malloc, [actorSize], actor.Name);                  // Allocate space for an Actor
             builder.BuildCall2(Current.Libs.RegisterActor, [inst]);                                                   // Register the actor
-            builder.BuildCall2(Current.Libs.ConstructActor,                                                           // Construct actor's body
-                [inst, Current.TargetNames[actor], Current.Scripts[actor].engine.Function, posX, posY, scriptCount]); // ^^^
+            builder.BuildCall2(Current.Libs.ConstructActor, [inst, Current.TargetNames[actor],                        // Construct actor's body
+                Current.Scripts[actor].Events.Struct, posX, posY, scriptCount]);                                      // ^^^
             var scriptField = builder.BuildStructGEP2(Current.Libs.ActorStruct, inst, 4);          // Find field of script array
             var scriptArray = builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptField,          // Get script list
                     $"{actor.Name}::Scripts");                                                                  // ^^^
 
-            for (int i = 0; i < scripts.scripts.Length; i++)
+            for (int i = 0; i < scripts.Scripts.Length; i++)
             {
-                ref var script = ref scripts.scripts[i];
+                ref var script = ref scripts.Scripts[i];
                 var scriptPtr = builder.BuildGEP2(Current.Libs.ScriptHolder, scriptArray,     // Scripts[i]
                     new[] { LLVMValueRef.CreateConst(i) }, $"{actor.Name}::Script[{i}]");       // ^^^
                 builder.BuildCall2(Current.Libs.ConstructScript,                                             // Construct script handler
@@ -122,9 +122,9 @@ public static partial class Generator
     {
         foreach (var target in Current.Scripts)
         {
-            for (int i = 0; i < target.Value.scripts.Length; i++)
+            for (int i = 0; i < target.Value.Scripts.Length; i++)
             {
-                ref var method = ref target.Value.scripts[i];
+                ref var method = ref target.Value.Scripts[i];
                 if(method.Script.Entry is not OnStart)
                     continue;
                 

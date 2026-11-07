@@ -23,12 +23,12 @@ void Actor::set_y(const float y)
         this->y = y;
 }
 
-Actor::Actor(char* name, void* script_engine, float x, float y, unsigned int script_count)
+Actor::Actor(char* name, Events* events, float x, float y, unsigned int script_count)
 {
     this->name = name;
     this->x = x;
     this->y = y;
     this->scripts = static_cast<Script*>(malloc(sizeof(Script)*script_count));
     this->script_count = script_count;
-    this->script_engine = script_engine;
+    this->events = events;
 }

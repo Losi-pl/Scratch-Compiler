@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Events.h"
 #include "Script.h"
 
 struct Actor
@@ -7,7 +8,7 @@ public:
     char* name;
     float x;
     float y;
-    void* script_engine;
+    Events* events;
     Script* scripts;
     unsigned int script_count;
     
@@ -15,6 +16,6 @@ public:
     
     void __cdecl set_y(float y);
     
-   __cdecl Actor(char* name, void* script_engine, float x, float y, unsigned int script_count);
+   __cdecl Actor(char* name, Events* script_events, float x, float y, unsigned int script_count);
 };
 

@@ -33,7 +33,7 @@ partial class Generator
         builder.BuildCall2(lambdaType, fun.Function.GetParam(0), [actor, fun.Function.GetParam(1)]);   // Lambda(actor)
         builder.BuildBr(loop_test);                                                                       // Loop back
         builder.PositionAtEnd(exit);                                                                  // exit:
-        builder.BuildRetVoid();                                                                           // Return;
+        builder.BuildRetVoid();                                                                           // Return
 
         return fun;
     }
@@ -44,13 +44,16 @@ partial class Generator
         var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.PointerType]);
         var main = lambda.Function.AppendBasicBlock("main");
         var actor = lambda.Function.GetParam(0); actor.Name = "actor";
+        lambda.Function.GetParam(1).Name = "lambda_env";
         Current.Builder.PositionAtEnd(main);
         var builder = Current.Builder;
         
-        var enginePtr = builder.BuildStructGEP2(Current.Libs.ActorStruct, actor, 3, "method*"); // field: Actor.engine_method
-        var engine = builder.BuildLoad2(Current.Libs.PointerType, enginePtr, "engine");                // Get engine method
-        builder.BuildCall2(engineType, engine, [actor]);                                                                 // engine(actor);
-        builder.BuildRetVoid();                                                                                          // Return
+        var eventsPtr = builder.BuildStructGEP2(Current.Libs.ActorStruct, actor, 3);   // field: Actor.events
+        var events = builder.BuildLoad2(Current.Libs.PointerType, eventsPtr, "events"); // Get events
+        var updatePtr = builder.BuildStructGEP2(Current.Libs.ScriptEvents, events, 0); // field: events.update
+        var update = builder.BuildLoad2(Current.Libs.PointerType, updatePtr, "update"); // Get events.update
+        builder.BuildCall2(engineType, update, [actor]);                                                  // events.update(actor);
+        builder.BuildRetVoid();                                                                           // Return
         
         return lambda;
     }

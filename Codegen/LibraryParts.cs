@@ -16,6 +16,7 @@ internal class LibraryParts
 
     public readonly StructType ActorStruct;
     public readonly StructType ScriptHolder;
+    public readonly StructType ScriptEvents;
     public readonly StructType ListHandler;
     
     public readonly LLVMMethod RegisterActor;
@@ -51,26 +52,26 @@ internal class LibraryParts
         Malloc = LLVMMethod.CreateMethod(PointerType, "malloc", [tools.Context.Int64Type]);
         
         var charPtr = LLVMTypeRef.CreatePointer(tools.Context.Int8Type, 0);
-
+        
         {
             ListHandler = StructType.CreateListHandler();
-            var scriptFields = new[]
-            {
+            ScriptEvents = StructType.Create(new[] {
+                PointerType, // Script update's
+                PointerType  // Run OnStart's
+            }, false, "Scratch::Script::Events");
+            ScriptHolder = StructType.Create(new[] {
                 Generator.Current.Context.Int32Type,    // uint script_point
                 Generator.Current.Context.Int32Type,    // uint stack_size
                 PointerType                             // void* method_stack
-            };
-            ScriptHolder = StructType.Create(scriptFields, false, "Scratch::Script");
-            var actorFields = new[]
-            {
+            }, false, "Scratch::Script");
+            ActorStruct = StructType.Create(new[] {
                 charPtr,                                // char* name
                 Generator.Current.Context.FloatType,    // float pos_x
                 Generator.Current.Context.FloatType,    // float pos_y
                 PointerType,                            // void* scripts_engine
                 ScriptHolder.Pointer,                   // Script* scripts
                 Generator.Current.Context.Int32Type     // uint script_count
-            };
-            ActorStruct = StructType.Create(actorFields, false, "Scratch::Actor");
+            }, false, "Scratch::Actor");
             
             GetActorIterator = LLVMMethod.CreateMethod(tools.Context.VoidType, "?begin_actor_iteration@@YA?AV?$_List_iterator@V?$_List_val@U?$_List_simple_types@PEAX@std@@@std@@@std@@XZ", [ListHandler.Pointer]);
             IterateNext = LLVMMethod.CreateMethod(ActorStruct.Pointer, "get_iteration_next", [ListHandler.Pointer, PointerType, Generator.Current.Context.Int1Type]);
@@ -80,7 +81,7 @@ internal class LibraryParts
             
             ConstructScript = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Script@@QEAA@I@Z", [ScriptHolder.Pointer, Generator.Current.Context.Int32Type]);
             
-            ConstructActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Actor@@QEAA@PEADPEAXMMI@Z", [ActorStruct.Pointer, charPtr, PointerType, tools.Context.FloatType, tools.Context.FloatType, tools.Context.Int32Type]);
+            ConstructActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Actor@@QEAA@PEADPEAUEvents@@MMI@Z", [ActorStruct.Pointer, charPtr, ScriptEvents.Type, tools.Context.FloatType, tools.Context.FloatType, tools.Context.Int32Type]);
             ActorSetPosX = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_x@Actor@@QEAAXM@Z", [ActorStruct.Pointer, tools.Context.FloatType]);
             ActorSetPosY = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_y@Actor@@QEAAXM@Z", [ActorStruct.Pointer, tools.Context.FloatType]);
         }
