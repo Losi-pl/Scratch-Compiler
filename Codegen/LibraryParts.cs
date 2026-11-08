@@ -7,7 +7,9 @@ internal class LibraryParts
 {
     public readonly LLVMMethod Puts;
     public readonly LLVMMethod Malloc;
+    public readonly LLVMMethod ExitApp;
     public readonly LLVMTypeRef PointerType;
+    public readonly LLVMValueRef Nullptr;
     
     
     public readonly LLVMMethod ScratchInit;
@@ -28,6 +30,7 @@ internal class LibraryParts
     public readonly LLVMMethod IterateNext;
     
     public readonly LLVMMethod ConstructScript;
+    public readonly LLVMMethod RunScript;
 
     public readonly LLVMAttributeRef HotAttribute;
     
@@ -48,8 +51,10 @@ internal class LibraryParts
     public LibraryParts(CodegenTools tools)
     {
         PointerType = tools.Context.CreatePointerType(0);
+        Nullptr = LLVMValueRef.CreateConstPointerNull(PointerType);
         Puts = LLVMMethod.CreateMethod(tools.Context.VoidType, "puts", [LLVMTypeRef.CreatePointer(tools.Context.Int8Type, 0)]);
         Malloc = LLVMMethod.CreateMethod(PointerType, "malloc", [tools.Context.Int64Type]);
+        ExitApp = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "_exit", [Generator.Current.Context.Int32Type]);
         
         var charPtr = LLVMTypeRef.CreatePointer(tools.Context.Int8Type, 0);
         
@@ -75,6 +80,7 @@ internal class LibraryParts
             
             GetActorIterator = LLVMMethod.CreateMethod(tools.Context.VoidType, "?begin_actor_iteration@@YA?AV?$_List_iterator@V?$_List_val@U?$_List_simple_types@PEAX@std@@@std@@@std@@XZ", [ListHandler.Pointer]);
             IterateNext = LLVMMethod.CreateMethod(ActorStruct.Pointer, "get_iteration_next", [ListHandler.Pointer, PointerType, Generator.Current.Context.Int1Type]);
+            RunScript = LLVMMethod.CreateMethod(tools.Context.VoidType, "run_actor_script", [ScriptHolder.Pointer, Generator.Current.Context.Int32Type]);
             RegisterActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "register_new_actor", [ActorStruct.Pointer]);
             GetActorCount = LLVMMethod.CreateMethod(tools.Context.Int32Type, "actor_count", []);
             GetActors = LLVMMethod.CreateMethod(PointerType, "get_actors", []);

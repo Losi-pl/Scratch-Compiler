@@ -17,5 +17,7 @@ public:
     void __cdecl set_y(float y);
     
    __cdecl Actor(char* name, Events* script_events, float x, float y, unsigned int script_count);
+    
+    // TODO Proposed Graphics: SFML
 };
 

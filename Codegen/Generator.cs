@@ -36,6 +36,7 @@ public static partial class Generator
         var actorSetup = LLVMMethod.CreateMethod(context.VoidType, "actor_setup", []);
         var actorEnumeration = GenActorEnumerationBody(builder);
         var scriptUpdates = GenRunScriptUpdates();
+        var runOnStartScripts = GenRunOnStartScripts();
 
         DeclareScriptMethods(tree);
         GenerateOnStartMethods();
@@ -49,9 +50,11 @@ public static partial class Generator
             
             builder.BuildCall2(Current.Libs.ScratchInit, []);
             builder.BuildCall2(actorSetup, []);
-            builder.BuildCall2(actorEnumeration, [scriptUpdates.Function, LLVMValueRef.CreateConstPointerNull(Current.Libs.PointerType)]);
+            builder.BuildCall2(actorEnumeration, [runOnStartScripts.Function, Current.Libs.Nullptr]);
+            builder.BuildCall2(actorEnumeration, [scriptUpdates.Function, Current.Libs.Nullptr]);
 
-            builder.BuildRetVoid();
+            builder.BuildCall2(Current.Libs.ExitApp, [LLVMValueRef.CreateConst(0)]);
+            builder.BuildUnreachable();
         }
         
         LLVM.InitializeNativeTarget();

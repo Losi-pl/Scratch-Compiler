@@ -24,10 +24,9 @@ partial class Generator
         builder.BuildCall2(Current.Libs.GetActorIterator, [iter]);                                        // Get actor iterator
         builder.BuildBr(loop_test); builder.PositionAtEnd(loop_test);                                 // loop_test:
         var actor = builder.BuildCall2(Current.Libs.IterateNext,                              // Get next actor
-            [iter, actors, LLVMValueRef.CreateConst(false)], "actor");                               // ^^^
-        var nullptr = LLVMValueRef.CreateConstPointerNull(Current.Libs.ActorStruct.Pointer);              // Const: nullptr
+            [iter, actors, LLVMValueRef.CreateConst(false)], "actor");                               // 
         var condition = builder.BuildICmp(                                                    // is {actor == null}
-            LLVMIntPredicate.LLVMIntNE, actor, nullptr, "condition");                 // ^^
+            LLVMIntPredicate.LLVMIntNE, actor, Current.Libs.Nullptr, "condition");    // ^^
         builder.BuildCondBr(condition, loop_body, exit);                                         // goto condition ? loop_body : exit
         builder.PositionAtEnd(loop_body);                                                             // loop_body:
         builder.BuildCall2(lambdaType, fun.Function.GetParam(0), [actor, fun.Function.GetParam(1)]);   // Lambda(actor)
@@ -43,7 +42,7 @@ partial class Generator
         var lambda = LLVMMethod.CreateMethod(Current.Context.VoidType, "run_actor_scripts", [Current.Libs.PointerType, Current.Libs.PointerType]);
         var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.PointerType]);
         var main = lambda.Function.AppendBasicBlock("main");
-        var actor = lambda.Function.GetParam(0); actor.Name = "actor";
+        var actor = lambda.Function.GetParam(0); actor.Name = "Actor";
         lambda.Function.GetParam(1).Name = "lambda_env";
         Current.Builder.PositionAtEnd(main);
         var builder = Current.Builder;
@@ -53,6 +52,26 @@ partial class Generator
         var updatePtr = builder.BuildStructGEP2(Current.Libs.ScriptEvents, events, 0); // field: events.update
         var update = builder.BuildLoad2(Current.Libs.PointerType, updatePtr, "update"); // Get events.update
         builder.BuildCall2(engineType, update, [actor]);                                                  // events.update(actor);
+        builder.BuildRetVoid();                                                                           // Return
+        
+        return lambda;
+    }
+    
+    private static LLVMMethod GenRunOnStartScripts()
+    {
+        var lambda = LLVMMethod.CreateMethod(Current.Context.VoidType, "run_onStart_scripts", [Current.Libs.PointerType, Current.Libs.PointerType]);
+        var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.PointerType]);
+        var main = lambda.Function.AppendBasicBlock("main");
+        var actor = lambda.Function.GetParam(0); actor.Name = "Actor";
+        lambda.Function.GetParam(1).Name = "lambda_env";
+        Current.Builder.PositionAtEnd(main);
+        var builder = Current.Builder;
+        
+        var eventsPtr = builder.BuildStructGEP2(Current.Libs.ActorStruct, actor, 3);   // field: Actor.events
+        var events = builder.BuildLoad2(Current.Libs.PointerType, eventsPtr, "events"); // Get events
+        var updatePtr = builder.BuildStructGEP2(Current.Libs.ScriptEvents, events, 1); // field: events.onStart
+        var update = builder.BuildLoad2(Current.Libs.PointerType, updatePtr, "update"); // Get events.onStart
+        builder.BuildCall2(engineType, update, [actor]);                                                  // events.onStart(actor);
         builder.BuildRetVoid();                                                                           // Return
         
         return lambda;

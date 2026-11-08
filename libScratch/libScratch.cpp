@@ -85,3 +85,12 @@ void* get_iteration_next(std::list<void*>::iterator& iterator, std::list<void*>&
     
     return value;
 }
+
+void run_actor_script(Script* scripts, unsigned int index)
+{
+    auto script = &scripts[index];
+    
+    script->scriptPoint = 1; // TODO Not all scripts are reset at double trigger
+    if (script->stackSize > 0)
+        std::memset(script->methodStack, 0, script->stackSize);
+}

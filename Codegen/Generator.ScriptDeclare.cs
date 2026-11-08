@@ -9,7 +9,7 @@ partial class Generator
 {
     private static void DeclareScriptMethods(SyntaxTree tree)
     {
-        var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer]);
+        var generalEventType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer]);
         Dictionary<Target, (ScriptData[] scripts, TargetEvents events)> scriptList = [];
         
         foreach (var target in tree.GetAllTargets())
@@ -51,19 +51,20 @@ partial class Generator
             }
 
             var engineFun = GenScriptsUpdate();
+            var onStartFun = GenStartForOnStart();
 
-            var eventStruct = GenEventsStruct(engineFun, null!);
-            scriptList[target] = (scripts.ToArray(), new(engineFun, null!, eventStruct));
+            var eventStruct = GenEventsStruct(engineFun, onStartFun);
+            scriptList[target] = (scripts.ToArray(), new(engineFun, onStartFun, eventStruct));
 
 
-            LLVMValueRef GenEventsStruct(LLVMMethod? update, LLVMMethod? onStart)
+            LLVMValueRef GenEventsStruct(LLVMMethod update, LLVMMethod onStart)
             {
                 unsafe
                 {
                     fixed (LLVMValueRef* fields = stackalloc LLVMValueRef[2])
                     {
-                        fields[0] = update?.Function ?? LLVMValueRef.CreateConstPointerNull(Current.Libs.PointerType);
-                        fields[1] = onStart?.Function ?? LLVMValueRef.CreateConstPointerNull(Current.Libs.PointerType);
+                        fields[0] = update.Function;
+                        fields[1] = onStart.Function;
                         
                         var structVal = LLVM.ConstNamedStruct(Current.Libs.ScriptEvents.Type, (LLVMOpaqueValue**)fields, 2);
                         using var name = new MarshaledString($"{target.Name}::Events");
@@ -82,7 +83,7 @@ partial class Generator
             LLVMMethod GenScriptsUpdate() 
             {
                 // ReSharper disable once VariableHidesOuterVariable
-                var engineFun = Current.Module.AddFunction($"{target.Name}::Engine", engineType);
+                var engineFun = Current.Module.AddFunction($"{target.Name}::Engine", generalEventType);
                 
                 engineFun.GetParam(0).Name = "Actor";
                 engineFun.AddAttributeAtIndex(LLVMAttributeIndex.LLVMAttributeFunctionIndex, Current.Libs.HotAttribute);
@@ -128,7 +129,23 @@ partial class Generator
                     Current.Builder.BuildRetVoid();                                                                                            // Return;
                 }
 
-                return new(engineFun, engineType, Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer], false);
+                return new(engineFun, generalEventType, Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer], false);
+            }
+            LLVMMethod GenStartForOnStart()
+            {
+                var runFun = Current.Module.AddFunction($"{target.Name}::Run::OnStart", generalEventType);
+                Current.Builder.PositionAtEnd(runFun.AppendBasicBlock("main"));
+                runFun.GetParam(0).Name = "Actor";
+
+                var scriptsPtr = Current.Builder.BuildStructGEP2(Current.Libs.ActorStruct, runFun.GetParam(0), 4, "field:Scripts");
+                var scriptsVal = Current.Builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptsPtr, "Scripts");
+
+                for (int i = 0; i < scripts.Count; i++)
+                    if(scripts[i].Script.Entry is OnStart)
+                        Current.Builder.BuildCall2(Current.Libs.RunScript, [scriptsVal, LLVMValueRef.CreateConst((uint)i)]);
+
+                Current.Builder.BuildRetVoid();
+                return new(runFun, generalEventType, Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer], false);
             }
         }
 

@@ -25,6 +25,8 @@ __declspec(dllexport) void* __cdecl get_iteration_next(std::list<void*>::iterato
 __declspec(dllexport) std::list<void*>* __cdecl get_actors();
 __declspec(dllexport) unsigned int __cdecl actor_count();
 
+__declspec(dllexport) void __cdecl run_actor_script(Script* scripts, unsigned int index);
+
 #ifdef __cplusplus
 }
 #endif
