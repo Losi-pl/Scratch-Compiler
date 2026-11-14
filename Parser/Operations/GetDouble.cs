@@ -4,7 +4,7 @@ using OneOf;
 
 namespace ScratchCompiler.Parser.Operations;
 
-public class GetFloat : FloatArgument
+public class GetDouble : FloatArgument
 {
     public const string ScratchXPosCode = "motion_xposition";
     public const string ScratchYPosCode = "motion_yposition";
@@ -24,8 +24,8 @@ public class GetFloat : FloatArgument
     
     private readonly OneOf<SystemSources, Variable> _source;
     
-    public GetFloat(SystemSources source) => _source = source;
-    public GetFloat(Variable source) => _source = source;
+    public GetDouble(SystemSources source) => _source = source;
+    public GetDouble(Variable source) => _source = source;
 
     public bool FromSystem => _source.IsT0;
     public bool FromVariable => _source.IsT1;

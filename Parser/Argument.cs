@@ -101,10 +101,10 @@ public abstract class FloatArgument : Argument
         var opcode = json["opcode"]!.GetValue<string>();
         switch (opcode)
         {
-            case GetFloat.ScratchXPosCode or GetFloat.ScratchYPosCode or 
-                GetFloat.ScratchRotationCode or GetFloat.ScratchSizeCode or 
-                GetFloat.ScratchVolumeCode:
-                return new GetFloat(GetFloat.SystemSourcesMap[opcode]);
+            case GetDouble.ScratchXPosCode or GetDouble.ScratchYPosCode or 
+                GetDouble.ScratchRotationCode or GetDouble.ScratchSizeCode or 
+                GetDouble.ScratchVolumeCode:
+                return new GetDouble(GetDouble.SystemSourcesMap[opcode]);
             case AddOperator.ScratchCode:
             {
                 var a = json.GetFloatInput(list, "NUM1");

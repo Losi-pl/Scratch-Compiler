@@ -1,4 +1,5 @@
 ﻿using LLVMSharp.Interop;
+using ScratchCompiler.Parser;
 
 namespace ScratchCompiler.Codegen;
 
@@ -37,7 +38,7 @@ partial class Generator
         return fun;
     }
 
-    private static LLVMMethod GenRunScriptUpdates()
+    private static LLVMMethod GenRunScriptUpdates() 
     {
         var lambda = LLVMMethod.CreateMethod(Current.Context.VoidType, "run_actor_scripts", [Current.Libs.PointerType, Current.Libs.PointerType]);
         var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.PointerType]);
@@ -57,7 +58,7 @@ partial class Generator
         return lambda;
     }
     
-    private static LLVMMethod GenRunOnStartScripts()
+    private static LLVMMethod GenRunOnStartScripts() 
     {
         var lambda = LLVMMethod.CreateMethod(Current.Context.VoidType, "run_onStart_scripts", [Current.Libs.PointerType, Current.Libs.PointerType]);
         var engineType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.PointerType]);

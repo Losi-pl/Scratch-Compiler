@@ -27,6 +27,8 @@ __declspec(dllexport) unsigned int __cdecl actor_count();
 
 __declspec(dllexport) void __cdecl run_actor_script(Script* scripts, unsigned int index);
 
+__declspec(dllexport) char* __cdecl cast_double_to_string(double value);
+
 #ifdef __cplusplus
 }
 #endif

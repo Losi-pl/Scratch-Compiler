@@ -5,34 +5,42 @@ namespace ScratchCompiler.Codegen;
 
 internal class LibraryParts
 {
-    public readonly LLVMMethod Puts;
-    public readonly LLVMMethod Malloc;
-    public readonly LLVMMethod ExitApp;
-    public readonly LLVMTypeRef PointerType;
-    public readonly LLVMValueRef Nullptr;
-    
-    
-    public readonly LLVMMethod ScratchInit;
-    public readonly LLVMMethod CombineStrings2;
-    public readonly LLVMMethod CombineStrings3;
 
-    public readonly StructType ActorStruct;
-    public readonly StructType ScriptHolder;
-    public readonly StructType ScriptEvents;
-    public readonly StructType ListHandler;
-    
-    public readonly LLVMMethod RegisterActor;
-    
-    public readonly LLVMMethod GetActorIterator;
-    public readonly LLVMMethod ConstructActor;
-    public readonly LLVMMethod GetActorCount;
-    public readonly LLVMMethod GetActors;
-    public readonly LLVMMethod IterateNext;
-    
-    public readonly LLVMMethod ConstructScript;
-    public readonly LLVMMethod RunScript;
+    #region System
 
-    public readonly LLVMAttributeRef HotAttribute;
+        public readonly LLVMMethod Puts;
+        public readonly LLVMMethod Malloc;
+        public readonly LLVMMethod ExitApp;
+        public readonly LLVMTypeRef PointerType;
+        public readonly LLVMValueRef Nullptr;
+        public readonly LLVMAttributeRef HotAttribute;
+
+    #endregion
+
+    #region Scratch
+
+        public readonly LLVMMethod ScratchInit;
+        public readonly LLVMMethod CombineStrings2;
+        public readonly LLVMMethod CombineStrings3;
+        public readonly LLVMMethod CastDoubleToString;
+
+        public readonly StructType ActorStruct;
+        public readonly StructType ScriptHolder;
+        public readonly StructType ScriptEvents;
+        public readonly StructType ListHandler;
+        
+        public readonly LLVMMethod RegisterActor;
+        
+        public readonly LLVMMethod GetActorIterator;
+        public readonly LLVMMethod ConstructActor;
+        public readonly LLVMMethod GetActorCount;
+        public readonly LLVMMethod GetActors;
+        public readonly LLVMMethod IterateNext;
+        
+        public readonly LLVMMethod ConstructScript;
+        public readonly LLVMMethod RunScript;
+
+    #endregion
     
     #region Motion
 
@@ -61,8 +69,8 @@ internal class LibraryParts
         {
             ListHandler = StructType.CreateListHandler();
             ScriptEvents = StructType.Create(new[] {
-                PointerType, // Script update's
-                PointerType  // Run OnStart's
+                PointerType,                            // Script update's
+                PointerType                             // Run OnStart's
             }, false, "Scratch::Script::Events");
             ScriptHolder = StructType.Create(new[] {
                 Generator.Current.Context.Int32Type,    // uint script_point
@@ -71,9 +79,9 @@ internal class LibraryParts
             }, false, "Scratch::Script");
             ActorStruct = StructType.Create(new[] {
                 charPtr,                                // char* name
-                Generator.Current.Context.FloatType,    // float pos_x
-                Generator.Current.Context.FloatType,    // float pos_y
-                PointerType,                            // void* scripts_engine
+                Generator.Current.Context.DoubleType,   // double pos_x
+                Generator.Current.Context.DoubleType,   // double pos_y
+                ScriptEvents.Pointer,                   // Events* script_events
                 ScriptHolder.Pointer,                   // Script* scripts
                 Generator.Current.Context.Int32Type     // uint script_count
             }, false, "Scratch::Actor");
@@ -87,15 +95,16 @@ internal class LibraryParts
             
             ConstructScript = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Script@@QEAA@I@Z", [ScriptHolder.Pointer, Generator.Current.Context.Int32Type]);
             
-            ConstructActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Actor@@QEAA@PEADPEAUEvents@@MMI@Z", [ActorStruct.Pointer, charPtr, ScriptEvents.Type, tools.Context.FloatType, tools.Context.FloatType, tools.Context.Int32Type]);
-            ActorSetPosX = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_x@Actor@@QEAAXM@Z", [ActorStruct.Pointer, tools.Context.FloatType]);
-            ActorSetPosY = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_y@Actor@@QEAAXM@Z", [ActorStruct.Pointer, tools.Context.FloatType]);
+            ConstructActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Actor@@QEAA@PEADPEAUEvents@@NNI@Z", [ActorStruct.Pointer, charPtr, ScriptEvents.Type, tools.Context.DoubleType, tools.Context.DoubleType, tools.Context.Int32Type]);
+            ActorSetPosX = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_x@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
+            ActorSetPosY = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_y@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
         }
         
         {
             ScratchInit = LLVMMethod.CreateMethod(tools.Context.VoidType, "scratch_init", []);
             CombineStrings2 = LLVMMethod.CreateMethod(charPtr, "combineStrings_2", [charPtr, charPtr]);
             CombineStrings3 = LLVMMethod.CreateMethod(charPtr, "combineStrings_3", [charPtr, charPtr, charPtr]);
+            CastDoubleToString = LLVMMethod.CreateMethod(charPtr, "cast_double_to_string", [Generator.Current.Context.DoubleType]);
         }
 
         LooksSay = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_say", [charPtr, charPtr]);

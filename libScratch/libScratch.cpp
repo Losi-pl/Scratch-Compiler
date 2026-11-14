@@ -3,11 +3,28 @@
 
 #include "pch.h"
 #include "libScratch.h"
-
+#include <charconv>
 #include <list>
 #include <iostream>
 #include <ostream>
 
+void looks_say(const char* target, const char* text)
+{
+    std::cout << target << " is saying: " << text << '\n';
+}
+
+void looks_think(const char* target, const char* text)
+{
+    std::cout << target << " is thinking: " << text << '\n';
+}
+
+static std::list<void*> actors;  // NOLINT(bugprone-throwing-static-initialization, misc-use-anonymous-namespace)
+
+std::list<void*>* get_actors() { return &actors; }
+void scratch_init() { actors = std::list<void*>(); }
+void register_new_actor(Actor* actor) { actors.push_back(actor); }
+std::list<void*>::iterator begin_actor_iteration() { return actors.begin(); }
+unsigned int actor_count() { return static_cast<unsigned int>(actors.size()); }
 char* combineStrings_2(const char* left, const char* right) {
     unsigned int leftC = 0, rightC = 0;
 
@@ -24,7 +41,6 @@ char* combineStrings_2(const char* left, const char* right) {
     
     return result;
 }
-
 char* combineStrings_3(const char* left, const char* center, const char* right) {
     unsigned int leftC = 0, centerC = 0, rightC = 0;
 
@@ -44,24 +60,52 @@ char* combineStrings_3(const char* left, const char* center, const char* right) 
     
     return result;
 }
-
-void looks_say(const char* target, const char* text)
+char* cast_double_to_string(const double value)
 {
-    std::cout << target << " is saying: " << text << '\n';
+    if (value == 0.0) 
+    {
+        auto buffer = static_cast<char*>(malloc(2));
+        if(buffer == nullptr) std::abort();
+        std::memcpy(buffer, "0", 2);
+        return buffer;
+    }
+    if (std::isnan(value))
+    {
+        auto buffer = static_cast<char*>(malloc(4));
+        if(buffer == nullptr) std::abort();
+        std::memcpy(buffer, "NaN", 4);
+        return buffer;
+    }
+    if (std::isinf(value))
+    {
+        auto isNeg = std::signbit(value);
+        auto buffer = static_cast<char*>(malloc(isNeg ? 10 : 9));
+        if(buffer == nullptr) std::abort();
+        std::memcpy(buffer, isNeg ? "-Infinity" : "Infinity", isNeg ? 10 : 9);
+        return buffer;
+    }
+    
+    {
+        unsigned int bufferSize = 32;
+        bool isScientific = std::abs(value) < 1e-6 || std::abs(value) >= 1e21;
+        char* buffer = static_cast<char*>(malloc(bufferSize));
+        if (buffer == nullptr) std::abort();
+        while (true)
+        {
+            auto [ptr, ec] = std::to_chars(buffer, &buffer[bufferSize], value, isScientific ? std::chars_format::scientific :std::chars_format::fixed);
+            if (ec != std::errc())
+            {
+                bufferSize *= 2;
+                free(buffer);
+                buffer = static_cast<char*>(malloc(bufferSize));
+                if (buffer == nullptr) std::abort();
+                continue;
+            }
+            *ptr = '\0';
+            return buffer;
+        }
+    }
 }
-
-void looks_think(const char* target, const char* text)
-{
-    std::cout << target << " is thinking: " << text << '\n';
-}
-
-static std::list<void*> actors;  // NOLINT(bugprone-throwing-static-initialization, misc-use-anonymous-namespace)
-
-std::list<void*>* get_actors() { return &actors; }
-void scratch_init() { actors = std::list<void*>(); }
-void register_new_actor(Actor* actor) { actors.push_back(actor); }
-std::list<void*>::iterator begin_actor_iteration() { return actors.begin(); }
-unsigned int actor_count() { return static_cast<unsigned int>(actors.size()); }
 
 void* get_iteration_next(std::list<void*>::iterator& iterator, std::list<void*>& list, bool removeLast)
 {

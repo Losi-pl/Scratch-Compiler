@@ -6,17 +6,17 @@ struct Actor
 {
 public:
     char* name;
-    float x;
-    float y;
+    double x;
+    double y;
     Events* events;
     Script* scripts;
     unsigned int script_count;
     
-    void __cdecl set_x(float x);
+    void __cdecl set_x(double x);
     
-    void __cdecl set_y(float y);
+    void __cdecl set_y(double y);
     
-   __cdecl Actor(char* name, Events* script_events, float x, float y, unsigned int script_count);
+   __cdecl Actor(char* name, Events* script_events, double x, double y, unsigned int script_count);
     
     // TODO Proposed Graphics: SFML
 };

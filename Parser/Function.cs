@@ -113,8 +113,8 @@ internal static class BlockHelpers
             case 1:
             {
                 var str = json["inputs"]?[key]?[1]?[1]?.GetValue<string>();
-                var @float = float.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : float.NaN;
-                return new ConstFloat(@float);
+                var @double = double.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : float.NaN;
+                return new ConstDouble(@double);
             }
                 
             case 3:
@@ -133,7 +133,7 @@ internal static class BlockHelpers
                 {
                     var @ref = json["inputs"]?[key]?[1]?[2]?.GetValue<string>();
                     var var = SyntaxTree.Current.project.Variables.FindByScratchCode(@ref!);
-                    return new GetFloat(var ?? throw new KeyNotFoundException());
+                    return new GetDouble(var ?? throw new KeyNotFoundException());
                 }
                 
                 throw new KeyNotFoundException();
@@ -187,8 +187,8 @@ internal static class BlockHelpers
                 var str = json["inputs"]?[key]?[1]?[1]?.GetValue<string>();
                 if(int.TryParse(str, out var i))
                     return new ConstInt(i);
-                if(float.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out var f))
-                    return new ConstFloat(f);
+                if(double.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture, out var d))
+                    return new ConstDouble(d);
                 return str switch
                 {
                     "true" => new ConstBool(true),
@@ -231,8 +231,8 @@ internal static class BlockHelpers
                             var @const = json["inputs"]?[key]?[2]?[1]?.GetValue<string>() ?? string.Empty;
                             if (int.TryParse(@const, out var i))
                                 return new ConstInt(i);
-                            if (float.TryParse(@const, out var f))
-                                return new ConstFloat(f);
+                            if (double.TryParse(@const, NumberStyles.Float, CultureInfo.InvariantCulture, out var d))
+                                return new ConstDouble(d);
                             if (bool.TryParse(@const, out var b))
                                 return new ConstBool(b);
                             return new ConstString(@const);
