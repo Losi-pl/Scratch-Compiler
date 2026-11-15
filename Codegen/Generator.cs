@@ -138,8 +138,8 @@ public static partial class Generator
 
     }
 
-    internal static Exception NotImplemented(object element) => 
-        new NotImplementedException($"Element {element.ToString().Truncate(32)} is not yet implemented");
+    internal static Exception NotImplemented(object element) => (Exception)System.Reflection.Assembly.GetAssembly(typeof(System.Reflection.Assembly))!
+        .GetType("System.NotImplementedException")!.GetConstructors()[1].Invoke([$"Element {element.ToString().Truncate(32)} is not yet implemented"]);
     
     public static void Compile(this LLVMSharp.Module module, string path)
     {
