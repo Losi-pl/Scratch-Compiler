@@ -54,6 +54,55 @@ internal static class GenScript
         return stackSize;
     }
     
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetStringArg(string method, Argument arg, Target target)
+    {
+        switch (arg)
+        {
+            case ConstString @const: return (GetConstString(method, @const.Const), NoDispose());
+            case JoinString join: return BuildJoinOperator(target, join, method);
+            case IntArgument intArg: return CastIntToString(method, intArg, target);
+            case FloatArgument floatArg: return CastDoubleToString(method, floatArg, target);
+        }
+        
+        throw Generator.NotImplemented(arg);
+    }
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetFloatArg(string method, FloatArgument arg, Target target)
+    {
+        switch (arg)
+        {
+            case ConstDouble floatArg: return (LLVMValueRef.CreateConst(floatArg.Const), NoDispose());
+            case ConstInt intArg: return (LLVMValueRef.CreateConst((float)intArg.Const), NoDispose());
+            case AddOperator add: return BuildAddOperator(target, add, method);
+            case SubtractOperator sub: return BuildSubtractOperator(target, sub, method);
+            case DivideOperator div: return BuildDivideOperator(target, div, method);
+            case MultiplyOperator mul: return BuildMultiplyOperator(target, mul, method);
+            case GetDouble get: return GetFloatValue(method, get, target);
+            default: throw Generator.NotImplemented(arg);
+        }
+    }
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetFloatValue(string method, GetDouble get, Target target)
+    {
+        if (_currentScript is null)
+            throw new InvalidOperationException();
+        if(get.FromSystem)
+            switch (get.SystemSource)
+            {
+                case GetDouble.SystemSources.XPosition:
+                {
+                    var field = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript.Function.GetParam(0), 1, "field: x");
+                    var x = Builder.BuildLoad2(Current.Context.DoubleType, field);
+                    return (x, NoDispose());
+                } break;
+                case GetDouble.SystemSources.YPosition:
+                {
+                    var field = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript.Function.GetParam(0), 2, "field: y");
+                    var x = Builder.BuildLoad2(Current.Context.DoubleType, field);
+                    return (x, NoDispose());
+                } break;
+            }
+        throw Generator.NotImplemented(get);
+    }
+    
     public static void BuildSayBlock(Target target, Say say, string methodName)
     {
         var text = GetStringArg(methodName, say.Text, target);
@@ -117,55 +166,21 @@ internal static class GenScript
 
         return (rez, NoDispose());
     }
-    
-    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetStringArg(string method, Argument arg, Target target)
+
+    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildJoinOperator(Target target, JoinString join, string methodName)
     {
-        switch (arg)
-        {
-            case ConstString @const: return (GetConstString(method, @const.Const), NoDispose());
-            case IntArgument intArg: return CastIntToString(method, intArg, target);
-            case FloatArgument floatArg: return CastDoubleToString(method, floatArg, target);
-        }
+        if (join.IsConstant)
+            return (GetConstString(methodName, join.AsConstant), NoDispose());
         
-        throw Generator.NotImplemented(arg);
-    }
+        var str1 = GetStringArg(methodName, join.Left, target);
+        var str2 = GetStringArg(methodName, join.Right, target);
 
-    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetFloatArg(string method, FloatArgument arg, Target target)
-    {
-        switch (arg)
-        {
-            case ConstDouble floatArg: return (LLVMValueRef.CreateConst(floatArg.Const), NoDispose());
-            case ConstInt intArg: return (LLVMValueRef.CreateConst((float)intArg.Const), NoDispose());
-            case AddOperator add: return BuildAddOperator(target, add, method);
-            case SubtractOperator sub: return BuildSubtractOperator(target, sub, method);
-            case DivideOperator div: return BuildDivideOperator(target, div, method);
-            case MultiplyOperator mul: return BuildMultiplyOperator(target, mul, method);
-            case GetDouble get: return GetFloatValue(method, get, target);
-            default: throw Generator.NotImplemented(arg);
-        }
-    }
-
-    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetFloatValue(string method, GetDouble get, Target target)
-    {
-        if (_currentScript is null)
-            throw new InvalidOperationException();
-        if(get.FromSystem)
-            switch (get.SystemSource)
-            {
-                case GetDouble.SystemSources.XPosition:
-                {
-                    var field = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript.Function.GetParam(0), 1, "field: x");
-                    var x = Builder.BuildLoad2(Current.Context.DoubleType, field);
-                    return (x, NoDispose());
-                } break;
-                case GetDouble.SystemSources.YPosition:
-                {
-                    var field = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript.Function.GetParam(0), 2, "field: y");
-                    var x = Builder.BuildLoad2(Current.Context.DoubleType, field);
-                    return (x, NoDispose());
-                } break;
-            }
-        throw Generator.NotImplemented(get);
+        var rez = Builder.BuildCall2(Generator.Current.Libs.OperatorJoin, [str1.Value, str2.Value], "join_ope");
+        
+        foreach (var @ref in str1.toFree.Concat(str2.toFree))
+            Builder.BuildFree(@ref);
+        
+        return (rez, [rez]);
     }
     
     private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) CastIntToString(string method, FloatArgument arg, Target target) 

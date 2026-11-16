@@ -20,7 +20,6 @@ internal class LibraryParts
     #region Scratch
 
         public readonly LLVMMethod ScratchInit;
-        public readonly LLVMMethod CombineStrings2;
         public readonly LLVMMethod CombineStrings3;
         public readonly LLVMMethod CastDoubleToString;
 
@@ -53,6 +52,12 @@ internal class LibraryParts
 
         public readonly LLVMMethod LooksSay;
         public readonly LLVMMethod LooksThink;
+
+    #endregion
+
+    #region Operators
+
+        public readonly LLVMMethod OperatorJoin;
 
     #endregion
     
@@ -102,7 +107,7 @@ internal class LibraryParts
         
         {
             ScratchInit = LLVMMethod.CreateMethod(tools.Context.VoidType, "scratch_init", []);
-            CombineStrings2 = LLVMMethod.CreateMethod(charPtr, "combineStrings_2", [charPtr, charPtr]);
+            OperatorJoin = LLVMMethod.CreateMethod(charPtr, "operator_join", [charPtr, charPtr]);
             CombineStrings3 = LLVMMethod.CreateMethod(charPtr, "combineStrings_3", [charPtr, charPtr, charPtr]);
             CastDoubleToString = LLVMMethod.CreateMethod(charPtr, "cast_double_to_string", [Generator.Current.Context.DoubleType]);
         }

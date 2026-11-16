@@ -35,6 +35,12 @@ public abstract class Argument
                     _ => throw new NotSupportedException()
                 };
             }
+            case JoinString.ScratchCode:
+            {
+                var str1 = json.GetGeneralInput(list, "STRING1");
+                var str2 = json.GetGeneralInput(list, "STRING2");
+                return new JoinString(str1, str2);
+            }
         }
         if(FloatArgument.Parse(json, list) is { } fArg)
             return fArg;

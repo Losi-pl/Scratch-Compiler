@@ -27,13 +27,6 @@ public class CodeBlock
 
         // ReSharper disable once UseCollectionExpression
         _functions = functions.ToImmutableArray();
-        
-        // ReSharper disable once VariableHidesOuterVariable
-        JsonObject? Next(JsonObject current)
-        {
-            var nextCode = current["next"]?.GetValue<string>();
-            return nextCode is null ? null : json[nextCode]!.AsObject();
-        }
     }
 
     public CodeEntry Entry => _entry;

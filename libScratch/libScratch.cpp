@@ -25,7 +25,7 @@ void scratch_init() { actors = std::list<void*>(); }
 void register_new_actor(Actor* actor) { actors.push_back(actor); }
 std::list<void*>::iterator begin_actor_iteration() { return actors.begin(); }
 unsigned int actor_count() { return static_cast<unsigned int>(actors.size()); }
-char* combineStrings_2(const char* left, const char* right) {
+char* operator_join(const char* left, const char* right) {
     unsigned int leftC = 0, rightC = 0;
 
     while (left[leftC] != 0) ++leftC;
