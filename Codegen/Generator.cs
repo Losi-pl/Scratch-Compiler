@@ -169,11 +169,23 @@ public static partial class Generator
             "lld-link", new[] { objectFile, 
                 $"/out:{path}",
                 Path.Combine(AppContext.BaseDirectory, "libScratch.lib"), 
+                // C++ Runtime Libs
                 "/defaultlib:libcmt.lib", 
                 "/defaultlib:libvcruntime.lib",
+                "/defaultlib:libcpmt.lib",
+                // System Libs
+                "user32.lib", 
+                "gdi32.lib", 
+                "opengl32.lib", 
+                "winmm.lib",
+                "advapi32.lib",
+                "shell32.lib",
+                "ole32.lib",
+                // Sysroot
                 $"/libpath:{sysroot}/crt/lib/x86_64",
                 $"/libpath:{sysroot}/sdk/lib/um/x86_64",
                 $"/libpath:{sysroot}/sdk/lib/ucrt/x86_64",
+                // Attributes
                 "/noimplib"
             }
             // ReSharper restore UseCollectionExpression, StringLiteralTypo
