@@ -33,11 +33,10 @@ static Image load_icon()
         {
             unsigned width = bitmap.width();
             unsigned height = bitmap.height();
-            const std::uint8_t* srcPixels = reinterpret_cast<const std::uint8_t*>(bitmap.data());
+            const auto srcPixels = bitmap.data();
         
-            // 2. Create a buffer for SFML (RGBA) and swap the R and B channels
-            std::vector<uint8_t> rgbaPixels(width * height * 4);
-            for (int i = 0; i < width * height * 4; i += 4) {
+            std::vector<uint8_t> rgbaPixels(width * height * 4);  // NOLINT(bugprone-implicit-widening-of-multiplication-result)
+            for (unsigned int i = 0; i < width * height * 4; i += 4) {
                 rgbaPixels[i + 0] = srcPixels[i + 2]; // Red   <- Blue
                 rgbaPixels[i + 1] = srcPixels[i + 1]; // Green <- Green
                 rgbaPixels[i + 2] = srcPixels[i + 0]; // Blue  <- Red
@@ -45,8 +44,6 @@ static Image load_icon()
             }
             return {{width, height}, rgbaPixels.data()};
         }
-        
-        //return {{static_cast<unsigned>(bitmap.width()), static_cast<unsigned>(bitmap.height())}, bitmap.data()};
     }
     catch (std::exception& e)
     {
