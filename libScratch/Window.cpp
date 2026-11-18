@@ -5,6 +5,9 @@
 #include <SFML/Graphics.hpp>
 #include <lunasvg.h>
 
+#include "libScratch.h"
+#include "Actor.h"
+
 using namespace sf;
 
 static std::string svgIcon = R"(
@@ -54,11 +57,11 @@ static Image load_icon()
 
 void start_app()
 {
-    RenderWindow window(VideoMode({240 * 4, 180 * 4}), "Scratch App");
+    RenderWindow window(VideoMode({240 * 4, 180 * 4}), "Scratch App", sf::Style::Close);
     
     window.setIcon(load_icon());
     
-    CircleShape shape(100.f);
+    CircleShape shape(10.f);
     shape.setFillColor(Color::Blue);
 
     while (window.isOpen())
@@ -67,10 +70,19 @@ void start_app()
         {
             if (event->is<Event::Closed>())
                 window.close();
-            
-            window.clear(Color::White);
-            window.draw(shape);
-            window.display();
         }
+        
+        auto winSize = window.getSize();
+        
+        window.clear(Color::White);
+        for(auto ptr : *get_actors())
+        {
+            auto actor = static_cast<const Actor*>(ptr);
+            shape.setPosition({(static_cast<float>(winSize.x) / 2.f) + static_cast<float>(actor->x * 2.0), 
+                (static_cast<float>(winSize.y) / 2.f) - static_cast<float>(actor->y * 2.0)});
+            window.draw(shape);
+        }
+        
+        window.display();
     }
 }
