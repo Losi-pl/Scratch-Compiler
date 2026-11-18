@@ -14,6 +14,7 @@ internal class LibraryParts
         public readonly LLVMTypeRef PointerType;
         public readonly LLVMValueRef Nullptr;
         public readonly LLVMAttributeRef HotAttribute;
+        public readonly LLVMMethod StartApp;
 
     #endregion
 
@@ -68,6 +69,7 @@ internal class LibraryParts
         Puts = LLVMMethod.CreateMethod(tools.Context.VoidType, "puts", [LLVMTypeRef.CreatePointer(tools.Context.Int8Type, 0)]);
         Malloc = LLVMMethod.CreateMethod(PointerType, "malloc", [tools.Context.Int64Type]);
         ExitApp = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "_exit", [Generator.Current.Context.Int32Type]);
+        StartApp = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "start_app", []);
         
         var charPtr = LLVMTypeRef.CreatePointer(tools.Context.Int8Type, 0);
         

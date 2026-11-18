@@ -52,6 +52,7 @@ public static partial class Generator
             builder.BuildCall2(actorSetup, []);
             builder.BuildCall2(actorEnumeration, [runOnStartScripts.Function, Current.Libs.Nullptr]);
             builder.BuildCall2(actorEnumeration, [scriptUpdates.Function, Current.Libs.Nullptr]);
+            builder.BuildCall2(Current.Libs.StartApp, []);
 
             builder.BuildCall2(Current.Libs.ExitApp, [LLVMValueRef.CreateConst(0)]);
             builder.BuildUnreachable();
