@@ -12,6 +12,8 @@
 
 Libs/*
 !Libs/listMethods.bat
+!Libs/External/include/
+!Libs/External/lib/
 
 # User-specific stuff
 .idea/**/workspace.xml
