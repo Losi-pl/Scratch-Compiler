@@ -61,7 +61,6 @@ constexpr char svg_icon[] = R"(
 namespace
 {
     RenderWindow window;  // NOLINT(bugprone-throwing-static-initialization)
-    Texture testImage;  // NOLINT(bugprone-throwing-static-initialization)
     
     Image load_icon()
     {
@@ -105,15 +104,9 @@ namespace
 
 void create_window(const char* title)
 {
-    window = RenderWindow(VideoMode({240 * 4, 180 * 4}), title, Style::Close);
+    window = RenderWindow(VideoMode({480 * 2, 360 * 2}), title, Style::Close);
     window.setVisible(false);
     window.setIcon(load_icon());
-}
-
-void test_load_image(const void* data, size_t size)
-{
-    testImage = Texture();
-    if (!testImage.loadFromMemory(data, size)) std::abort();
 }
 
 void start_app()
@@ -121,9 +114,6 @@ void start_app()
     CircleShape shape(10.f);
     shape.setFillColor(Color::Blue);
     shape.setOrigin({5.f, 5.f});
-    Sprite test_spr(testImage);
-    test_spr.setOrigin({static_cast<float>(testImage.getSize().x) / 2.f, static_cast<float>(testImage.getSize().y) / 2.f});
-    test_spr.setRotation(degrees(45.f));
     
     window.setVisible(true);   
     while (window.isOpen())
@@ -138,28 +128,16 @@ void start_app()
         for(auto ptr : *get_actors())
         {
             const Actor& actor = *static_cast<const Actor*>(ptr);
-            auto costumes = reinterpret_cast<Actor::Costume*>(&static_cast<unsigned int*>(actor.costumes)[2]);
-            Sprite& sprite = costumes[actor.costume_index].sprite;
+            auto& costume = *reinterpret_cast<Actor::Costume*>(static_cast<uint8_t*>(actor.costumes) + sizeof(Actor::CostumesStorage) + (sizeof(Actor::Costume) * actor.costume_index));
+            costume.sprite.setPosition(calculate_position(actor));
             
-            std::cout << "Set position of \"" << costumes[actor.costume_index].name << "\" to: X:" << sprite.getOrigin().x << " Y:" << sprite.getOrigin().y << '\n';
-            sprite.setPosition(calculate_position(actor));
+            auto scale = static_cast<float>((actor.scale / 100.0) * costume.imageScale);
+            costume.sprite.setScale({scale, scale});
             
-            try
-            {
-                std::cout << "Drawing: " << costumes[actor.costume_index].name << '\n';
-                window.draw(sprite);
-            }
-            catch (std::exception& e)
-            {
-                std::cout << "Error: " << e.what() << '\n';
-                std::abort();
-            }
-            
-            std::cout << "Drawn: " << costumes[actor.costume_index].name << '\n';
+            window.draw(costume.sprite);
             shape.setPosition(calculate_position(actor));
             window.draw(shape);
         }
-        window.draw(test_spr);
         window.display();
     }
 }

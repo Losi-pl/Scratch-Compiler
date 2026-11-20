@@ -50,14 +50,6 @@ public static partial class Generator
             builder.BuildCall2(actorSetup, []);
             builder.BuildCall2(actorEnumeration, [runOnStartScripts.Function, Current.Libs.Nullptr]);
             builder.BuildCall2(actorEnumeration, [scriptUpdates.Function, Current.Libs.Nullptr]);
-            {
-                var testM = LLVMMethod.CreateMethod(Current.Context.VoidType, "test_load_image", [Current.Libs.PointerType, Current.Context.Int64Type]);
-                var testImg = tree.Actors.SelectMany(a => Enumerable.Sequence(0, a.Costumes.Length, 1)
-                    .Select(c => (actor: a, costime: c))).First(ac => ac.actor.Costumes[ac.costime].FileFormat != CostumeFormat.SVG);
-                var image = Current.Scripts[testImg.actor].costumes[testImg.costime];
-                var size = builder.BuildLoad2(LLVMTypeRef.Int64, image.Size!.Value, "image_size");
-                builder.BuildCall2(testM, [image.Content, size]);
-            }
             builder.BuildCall2(Current.Libs.RunApp, []);
 
             builder.BuildCall2(Current.Libs.ExitApp, [LLVMValueRef.CreateConst(0)]);
@@ -108,16 +100,16 @@ public static partial class Generator
             var scriptCount = LLVMValueRef.CreateConst(scripts.Scripts.Length);                                       // Const: Count of Actor scripts
             var defCostume = LLVMValueRef.CreateConst(actor.DefaultCostume);                                          // Const: Default Costume index
             var costumeCount = LLVMValueRef.CreateConst((uint)actor.Costumes.Length);                                 // Const: Costume count
-            var nullptr = LLVMValueRef.CreateConstPointerNull(Current.Libs.PointerType);
+            var actorScale = LLVMValueRef.CreateConst(actor.DefaultSize);                                             // Const: Actor size
             
             var inst = builder.BuildCall2(Current.Libs.Malloc, [actorSize], actor.Name);                  // Allocate space for an Actor
             builder.BuildCall2(Current.Libs.RegisterActor, [inst]);                                                   // Register the actor
             var costumes = builder.BuildCall2(Current.Libs.CreateCostumeStorage, [costumeCount],          // Create costume storage
                 $"{actor.Name}::Costumes");                                                                      // ^^^
             builder.BuildCall2(Current.Libs.ConstructActor, [inst, Current.TargetNames[actor],                        // Construct actor's body
-                Current.Scripts[actor].Events.Struct, posX, posY, scriptCount, costumes, defCostume]);                // ^^^
+                Current.Scripts[actor].Events.Struct, posX, posY, scriptCount, costumes, defCostume, actorScale]);    // ^^^
             var scriptField = builder.BuildStructGEP2(Current.Libs.ActorStruct, inst, 4,           // Find field of script array
-                $"field: {actor.Name}::Scripts");                                                                // ^^^
+                $"field: {actor.Name}::Scripts");                                                               // ^^^
             var scriptArray = builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptField,          // Get script list
                     $"{actor.Name}::Scripts");                                                                  // ^^^
 
@@ -127,11 +119,21 @@ public static partial class Generator
                 var index = LLVMValueRef.CreateConst((uint)costume.ind);
                 var name = builder.BuildGlobalString(costume.sys.Name, $"{actor.Name}::{costume.sys.AssetID}::Name");
                 if (costume.sys.FileFormat == CostumeFormat.SVG)
+                {
                     builder.BuildCall2(Current.Libs.LoadCostumeFromSvg, [costumes, index, costume.llvm.Content, name]);
+                    builder.BuildCall2(Current.Libs.SetCostumeCenter, [
+                        costumes, index, LLVMValueRef.CreateConst(costume.sys.RotationCenter.x * 2),
+                        LLVMValueRef.CreateConst(costume.sys.RotationCenter.x * 2)
+                    ]);
+                }
                 else
                 {
                     var size = builder.BuildLoad2(Current.Context.Int64Type, costume.llvm.Size!.Value, $"{actor.Name}::{costume.sys.AssetID}::Size");   
                     builder.BuildCall2(Current.Libs.LoadCostumeFromData, [costumes, index, costume.llvm.Content, size, name]);
+                    builder.BuildCall2(Current.Libs.SetCostumeCenter, [
+                        costumes, index, LLVMValueRef.CreateConst(costume.sys.RotationCenter.x),
+                        LLVMValueRef.CreateConst(costume.sys.RotationCenter.x)
+                    ]);
                 }
             }
             

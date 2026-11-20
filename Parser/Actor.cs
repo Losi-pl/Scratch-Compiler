@@ -11,7 +11,9 @@ public class Actor: Target
             var y = json["y"]?.GetValue<double>() ?? double.NaN;
             DefaultPosition = (x, y);
         }
+        DefaultSize = json["size"]?.GetValue<double>() ?? double.NaN;
     }
     
     public (double x, double y) DefaultPosition { get; }
+    public double DefaultSize { get; }
 }

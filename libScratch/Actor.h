@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <string>
+#include <SFML/Graphics/Image.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 
@@ -8,34 +9,38 @@
 
 struct Actor
 {
-public:
     char* name;
     double x;
     double y;
     Events* events;
     Script* scripts;
     unsigned int script_count;
-    void* costumes;
     unsigned int costume_index;
+    double scale;
+    void* costumes;
     
     void __cdecl set_x(double x);
-    
     void __cdecl set_y(double y);
     
-   __cdecl Actor(char* name, Events* script_events, double x, double y, unsigned int script_count, void* costumes, unsigned int costume_index);
-    
-    struct Costume
+    struct alignas(8) Costume
     {
+        sf::Texture texture;
         sf::Sprite sprite;
         std::string name;
+        float imageScale;
         
-        Costume(const sf::Texture& texture, const char* name) : sprite(texture) { this->name = name; }
+        Costume(const void* content, size_t size, const char* name, float scale): texture(content, size), sprite(texture), name(name) { imageScale = scale; }
+        Costume(const sf::Image& image, const char* name, float scale): texture(image), sprite(texture), name(name) { imageScale = scale; }
     };
+
+    struct alignas(Costume) CostumesStorage { unsigned int count; };
 };
 
 extern "C" {
-    void* __cdecl create_costume_storage(unsigned int count);
+    Actor::CostumesStorage* __cdecl create_costume_storage(unsigned int count);
 
-    void __cdecl load_costume_data(void* storage, unsigned int index, const void* data, size_t size, const char* name);
-    void __cdecl load_costume_svg(void* storage, unsigned int index, const char* svg, const char* name);
+    void __cdecl construct_actor(Actor* actor, char* name, Events* script_events, double x, double y, unsigned int script_count, void* costumes, unsigned int costume_index, double scale);
+    void __cdecl load_costume_data(Actor::CostumesStorage* storage, unsigned int index, const void* data, size_t size, const char* name);
+    void __cdecl load_costume_svg(Actor::CostumesStorage* storage, unsigned int index, const char* svg, const char* name);
+    void __cdecl set_costume_center(Actor::CostumesStorage* storage, unsigned int index, double x, double y);
 }

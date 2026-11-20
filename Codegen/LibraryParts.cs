@@ -44,6 +44,7 @@ internal class LibraryParts
         public readonly LLVMMethod CreateCostumeStorage;
         public readonly LLVMMethod LoadCostumeFromData;
         public readonly LLVMMethod LoadCostumeFromSvg;
+        public readonly LLVMMethod SetCostumeCenter;
         
     #endregion
     
@@ -97,8 +98,9 @@ internal class LibraryParts
                 ScriptEvents.Pointer,                   // Events* script_events
                 ScriptHolder.Pointer,                   // Script* scripts
                 Generator.Current.Context.Int32Type,    // uint script_count
-                PointerType,                            // Costumes[] costumes
                 Generator.Current.Context.Int32Type,    // uint current_costume
+                Generator.Current.Context.DoubleType,   // double scale
+                PointerType,                            // Costumes[] costumes
             }, false, "Scratch::Actor");
             
             GetActorIterator = LLVMMethod.CreateMethod(tools.Context.VoidType, "?begin_actor_iteration@@YA?AV?$_List_iterator@V?$_List_val@U?$_List_simple_types@PEAX@std@@@std@@@std@@XZ", [ListHandler.Pointer]);
@@ -110,13 +112,16 @@ internal class LibraryParts
             
             ConstructScript = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Script@@QEAA@I@Z", [ScriptHolder.Pointer, Generator.Current.Context.Int32Type]);
             
-            ConstructActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Actor@@QEAA@PEADPEAUEvents@@NNIPEAXI@Z", [ActorStruct.Pointer, charPtr, ScriptEvents.Pointer, tools.Context.DoubleType, tools.Context.DoubleType, tools.Context.Int32Type, PointerType, tools.Context.Int32Type]);
+            ConstructActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "construct_actor", [ActorStruct.Pointer, charPtr, 
+                ScriptEvents.Pointer, tools.Context.DoubleType, tools.Context.DoubleType, tools.Context.Int32Type, 
+                PointerType, tools.Context.Int32Type, tools.Context.DoubleType]);
             ActorSetPosX = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_x@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
             ActorSetPosY = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_y@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
             
             CreateCostumeStorage = LLVMMethod.CreateMethod(PointerType, "create_costume_storage", [tools.Context.Int32Type]);
             LoadCostumeFromData = LLVMMethod.CreateMethod(tools.Context.VoidType, "load_costume_data", [PointerType, tools.Context.Int32Type, PointerType, tools.Context.Int64Type, charPtr]);
             LoadCostumeFromSvg = LLVMMethod.CreateMethod(tools.Context.VoidType, "load_costume_svg", [PointerType, tools.Context.Int32Type, charPtr, charPtr]);
+            SetCostumeCenter = LLVMMethod.CreateMethod(tools.Context.VoidType, "set_costume_center", [PointerType, tools.Context.Int32Type, tools.Context.DoubleType, tools.Context.DoubleType]);
         }
         
         {
