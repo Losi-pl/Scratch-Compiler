@@ -13,7 +13,5 @@ internal class CodegenTools
     public LLVMBuilderRef Builder;
     public LibraryParts Libs = null!;
 
-    public FrozenDictionary<Target, ActorElements> Scripts = null!;
-
-    public FrozenDictionary<Target, CharPointer> TargetNames = null!;
+    public FrozenDictionary<Target, TargetsCode> Targets = null!;
 }

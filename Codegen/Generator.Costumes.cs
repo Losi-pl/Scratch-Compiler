@@ -5,7 +5,7 @@ namespace ScratchCompiler.Codegen;
 
 partial class Generator
 {
-    private static EmbeddedFile[] EmbedCostumes(Target target)
+    internal static EmbeddedFile[] EmbedCostumes(Target target)
     {
         List<EmbeddedFile> costumes = [];
         var nullptr = LLVMValueRef.CreateConstPointerNull(Current.Libs.PointerType);
@@ -29,7 +29,7 @@ partial class Generator
                     LLVM.SetGlobalConstant(body, 1 /* true */);                   // constant
                     LLVM.SetAlignment(body, 1);                                      // align 1
                     
-                    costumes.Add(new(Current.Module.AddGlobal(bodyType, bodyName), nullptr));
+                    costumes.Add(new(body, nullptr));
                 }
             }
             else 
@@ -40,24 +40,24 @@ partial class Generator
 
                 string bodyName = $"Actor::{target.Name}::Costume::{costume.AssetID}::Body";
                 string sizeName = $"Actor::{target.Name}::Costume::{costume.AssetID}::Size";
+                LLVMValueRef body, bodySize;
                 unsafe {
                     LLVMValueRef @const;
                     fixed (byte* buffer = memory.ToArray())
                         @const = LLVM.ConstStringInContext2(Current.Context, (sbyte*)buffer, (nuint)memory.Length, 1 /* true */);
                     using var marshName = new MarshaledString(bodyName);
                     var bodyType = LLVMTypeRef.CreateArray(LLVMTypeRef.Int8, (uint)memory.Length);
-                    LLVMValueRef body = LLVM.AddGlobal(Current.ResourceModule, bodyType, marshName);
+                    body = LLVM.AddGlobal(Current.ResourceModule, bodyType, marshName);
                     LLVM.SetInitializer(body, @const);
                     LLVM.SetLinkage(body, LLVMLinkage.LLVMLinkOnceODRLinkage);             // linkonce_odr
                     LLVM.SetUnnamedAddr(body, (int)LLVMUnnamedAddr.LLVMGlobalUnnamedAddr); // unnamed_addr
                     LLVM.SetGlobalConstant(body, 1 /* true */);                   // constant
                     LLVM.SetAlignment(body, 1);                                      // align 1
                     
-                    costumes.Add(new(Current.Module.AddGlobal(bodyType, bodyName), Current.Module.AddGlobal(LLVMTypeRef.Int64, sizeName)));
                 }
 
                 unsafe {
-                    LLVMValueRef bodySize = Current.ResourceModule.AddGlobal(Current.Context.Int64Type, sizeName);
+                    bodySize = Current.ResourceModule.AddGlobal(Current.Context.Int64Type, sizeName);
                     var @const = LLVM.ConstInt(LLVMTypeRef.Int64, (ulong)memory.Length, 0);
                     LLVM.SetInitializer(bodySize, @const);
                     LLVM.SetLinkage(bodySize, LLVMLinkage.LLVMLinkOnceODRLinkage);             // linkonce_odr
@@ -65,6 +65,8 @@ partial class Generator
                     LLVM.SetGlobalConstant(bodySize, 1 /* true */);                   // constant
                     LLVM.SetAlignment(bodySize, 1);                                      // align 1
                 }
+                
+                costumes.Add(new(body, bodySize));
             }
         }
         return costumes.ToArray();

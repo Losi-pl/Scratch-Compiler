@@ -4,15 +4,15 @@ namespace ScratchCompiler.Codegen;
 
 public class CodeSet
 {
-    private LLVMContextRef _context;
-    private LLVMModuleRef[] _modules;
-    private LLVMModuleRef[] _resources;
+    private readonly LLVMModuleRef _system;
+    private readonly LLVMModuleRef _resources;
+    private readonly LLVMModuleRef[] _targets;
 
-    internal CodeSet(LLVMContextRef context, LLVMModuleRef[] modules, LLVMModuleRef[] resources)
+    internal CodeSet(LLVMModuleRef system, LLVMModuleRef resources, LLVMModuleRef[] targets)
     {
-        _context = context;
-        _modules = modules;
+        _system = system;
         _resources = resources;
+        _targets = targets;
     }
     
     public void Compile(string path)
@@ -32,9 +32,9 @@ public class CodeSet
         Directory.CreateDirectory(tempFolder);
 
         var objects = new List<string>();
-        foreach (var module in _modules.Concat(_resources))
+        foreach (var (module, name) in new[] { (_system, "scratch"), (_resources, "resources") }.Concat(_targets.Select(a => (a, Guid.CreateVersion7().ToString()))))
         {
-            var filePath = $"{tempFolder}\\{module.SourceFileName}.obj";
+            var filePath = $"{tempFolder}\\{name}.obj";
             objects.Add(filePath); File.Create(filePath).Close();
             targetMachine.EmitToFile(module, filePath, LLVMCodeGenFileType.LLVMObjectFile);
         }
@@ -78,7 +78,7 @@ public class CodeSet
 
     public void Dump()
     {
-        foreach (var module in _modules)
+        foreach (var module in new[]{_system}.Concat(_targets))
             module.Dump();
     }
 }

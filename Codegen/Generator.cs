@@ -2,10 +2,7 @@
 using System.Collections.Frozen;
 using Humanizer;
 using LLVMSharp.Interop;
-using ScratchCompiler.Codegen.ValueTypes;
 using ScratchCompiler.Parser;
-using ScratchCompiler.Parser.Entries;
-using Target = ScratchCompiler.Parser.Target;
 
 namespace ScratchCompiler.Codegen;
 
@@ -27,7 +24,6 @@ public static partial class Generator
             ResourceModule = context.CreateModuleWithName($"{module.SourceFileName}.resources")
         };
         Current.Libs = new(Current);
-        MapActorNames(tree);
         
         var main = LLVMMethod.CreateMethod(context.VoidType, "main", []);
         var actorSetup = LLVMMethod.CreateMethod(context.VoidType, "actor_setup", []);
@@ -35,8 +31,7 @@ public static partial class Generator
         var scriptUpdates = GenRunScriptUpdates();
         var runOnStartScripts = GenRunOnStartScripts();
 
-        DeclareScriptMethods(tree);
-        GenerateOnStartMethods();
+        Current.Targets = tree.GetAllTargets().Select(t => new KeyValuePair<Target, TargetsCode>(t, new(t))).ToFrozenDictionary();
         GenerateActorsDeclaration(builder, tree, actorSetup);
         
         // Build the body of `main`
@@ -52,7 +47,7 @@ public static partial class Generator
             builder.BuildCall2(actorEnumeration, [scriptUpdates.Function, Current.Libs.Nullptr]);
             builder.BuildCall2(Current.Libs.RunApp, []);
 
-            builder.BuildCall2(Current.Libs.ExitApp, [LLVMValueRef.CreateConst(0)]);
+            builder.BuildCall2(Current.Libs.ExitApp, [LLVMValueRef.CreateConst(0u)]);
             builder.BuildUnreachable();
         }
         
@@ -60,15 +55,7 @@ public static partial class Generator
         LLVM.InitializeNativeAsmParser();
         LLVM.InitializeNativeAsmPrinter();
 
-        return new(context, [Current.Module], [Current.ResourceModule]);
-    }
-
-    private static void MapActorNames(SyntaxTree tree)
-    {
-        Dictionary<Target, CharPointer> local = new();
-        foreach (var target in tree.GetAllTargets())
-            local[target] = Current.Builder.CreateGlobalConstString(target.Name, target.Name + "::Name");
-        Current.TargetNames = local.ToFrozenDictionary();
+        return new(Current.Module, Current.ResourceModule, Current.Targets.Values.Select(a => a.Module).ToArray());
     }
 
     private static void GenerateActorsDeclaration(LLVMBuilderRef builder, SyntaxTree tree, LLVMMethod actorSetup)
@@ -94,7 +81,7 @@ public static partial class Generator
                 builder.PositionAtEnd(entryBlock.Value);
             }
 
-            var scripts = Current.Scripts[actor];
+            var scripts = Current.Targets[actor];
             var posX = LLVMValueRef.CreateConst(actor.DefaultPosition.x);                                             // Const: Start position x
             var posY = LLVMValueRef.CreateConst(actor.DefaultPosition.y);                                             // Const: Start position y
             var scriptCount = LLVMValueRef.CreateConst(scripts.Scripts.Length);                                       // Const: Count of Actor scripts
@@ -106,15 +93,15 @@ public static partial class Generator
             builder.BuildCall2(Current.Libs.RegisterActor, [inst]);                                                   // Register the actor
             var costumes = builder.BuildCall2(Current.Libs.CreateCostumeStorage, [costumeCount],          // Create costume storage
                 $"{actor.Name}::Costumes");                                                                      // ^^^
-            builder.BuildCall2(Current.Libs.ConstructActor, [inst, Current.TargetNames[actor],                        // Construct actor's body
-                Current.Scripts[actor].Events.Struct, posX, posY, scriptCount, costumes, defCostume, actorScale]);    // ^^^
+            builder.BuildCall2(Current.Libs.ConstructActor, [inst, Current.Targets[actor].Name,                       // Construct actor's body
+                Current.Targets[actor].Events.Struct, posX, posY, scriptCount, costumes, defCostume, actorScale]);    // ^^^
             var scriptField = builder.BuildStructGEP2(Current.Libs.ActorStruct, inst, 4,           // Find field of script array
                 $"field: {actor.Name}::Scripts");                                                               // ^^^
             var scriptArray = builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptField,          // Get script list
                     $"{actor.Name}::Scripts");                                                                  // ^^^
 
             
-            foreach (var costume in actor.Costumes.Zip(Current.Scripts[actor].Costumes).Select((c, i) => (sys: c.First, llvm: c.Second, ind: i)))
+            foreach (var costume in actor.Costumes.Zip(Current.Targets[actor].Costumes).Select((c, i) => (sys: c.First, llvm: c.Second, ind: i)))
             {
                 var index = LLVMValueRef.CreateConst((uint)costume.ind);
                 var name = builder.BuildGlobalString(costume.sys.Name, $"{actor.Name}::{costume.sys.AssetID}::Name");
@@ -129,7 +116,7 @@ public static partial class Generator
             
             for (int i = 0; i < scripts.Scripts.Length; i++)
             {
-                ref var script = ref scripts.Scripts[i];
+                var script = scripts.Scripts[i];
                 var scriptPtr = builder.BuildGEP2(Current.Libs.ScriptHolder, scriptArray,     // Scripts[i]
                     new[] { LLVMValueRef.CreateConst(i) }, $"{actor.Name}::Script[{i}]");       // ^^^
                 builder.BuildCall2(Current.Libs.ConstructScript,                                             // Construct script handler
@@ -138,23 +125,6 @@ public static partial class Generator
         }
 
         builder.BuildRetVoid();
-    }
-
-    private static void GenerateOnStartMethods()
-    {
-        foreach (var target in Current.Scripts)
-        {
-            for (int i = 0; i < target.Value.Scripts.Length; i++)
-            {
-                ref var method = ref target.Value.Scripts[i];
-                if(method.Script.Entry is not OnStart)
-                    continue;
-                
-                method.StackSize = GenScript.GenerateScript(target.Key, method.Script, method.Function);
-                method.IsDefined = true;
-            }
-        }
-
     }
 
     internal static Exception NotImplemented(object element) => (Exception)System.Reflection.Assembly.GetAssembly(typeof(System.Reflection.Assembly))!

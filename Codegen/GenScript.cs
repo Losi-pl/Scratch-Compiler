@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Globalization;
 using LLVMSharp.Interop;
 using ScratchCompiler.Codegen.ValueTypes;
 using ScratchCompiler.Parser;
@@ -31,7 +30,7 @@ internal static class GenScript
     private static LLVMBuilderRef Builder => Generator.Current.Builder;
     [ThreadStatic] private static LLVMMethod? _currentScript;
 
-    public static uint GenerateScript(Target target, CodeBlock script, LLVMMethod method)
+    public static uint GenerateScript(TargetsCode target, CodeBlock script, LLVMMethod method)
     {
         ResetConstVarCounters();
         Dictionary<uint, LLVMBasicBlockRef> breakpoints = [];
@@ -83,7 +82,7 @@ internal static class GenScript
         }
     }
 
-    private static void BuildFunctionBlock(Target target, Function function, string methodName)
+    private static void BuildFunctionBlock(TargetsCode target, Function function, string methodName)
     {
         switch (function)
         {
@@ -99,7 +98,7 @@ internal static class GenScript
         Builder.BuildRetVoid();
     }
 
-    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetStringArg(string method, Argument arg, Target target)
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetStringArg(string method, Argument arg, TargetsCode target)
     {
         switch (arg)
         {
@@ -111,7 +110,7 @@ internal static class GenScript
         
         throw Generator.NotImplemented(arg);
     }
-    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetFloatArg(string method, FloatArgument arg, Target target)
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetFloatArg(string method, FloatArgument arg, TargetsCode target)
     {
         switch (arg)
         {
@@ -125,7 +124,7 @@ internal static class GenScript
             default: throw Generator.NotImplemented(arg);
         }
     }
-    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetFloatValue(string method, GetDouble get, Target target)
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetFloatValue(string _1, GetDouble get, TargetsCode _2)
     {
         if (_currentScript is null)
             throw new InvalidOperationException();
@@ -148,22 +147,22 @@ internal static class GenScript
         throw Generator.NotImplemented(get);
     }
     
-    public static void BuildSayBlock(Target target, Say say, string methodName)
+    public static void BuildSayBlock(TargetsCode target, Say say, string methodName)
     {
         var text = GetStringArg(methodName, say.Text, target);
-        Builder.BuildCall2(Current.Libs.LooksSay, [Current.TargetNames[target], text.Value]);
+        Builder.BuildCall2(Current.Libs.LooksSay, [target.Name, text.Value]);
         foreach (var @ref in text.toFree)
             Builder.BuildFree(@ref);
     }
-    public static void BuildThinkBlock(Target target, Think think, string methodName)
+    public static void BuildThinkBlock(TargetsCode target, Think think, string methodName)
     {
         var text = GetStringArg(methodName, think.Text, target);
-        Builder.BuildCall2(Current.Libs.LooksThink, [Current.TargetNames[target], text.Value]);
+        Builder.BuildCall2(Current.Libs.LooksThink, [target.Name, text.Value]);
         foreach (var @ref in text.toFree)
             Builder.BuildFree(@ref);
     }
 
-    public static void BuildGotoBlock(Target target, MoveTo @goto, string methodName)
+    public static void BuildGotoBlock(TargetsCode target, MoveTo @goto, string methodName)
     {
         if (@goto.Destination.IsT0)
             throw Generator.NotImplemented(@goto);
@@ -179,7 +178,7 @@ internal static class GenScript
             Builder.BuildFree(@ref);
     }
 
-    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildAddOperator(Target target, AddOperator add, string methodName)
+    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildAddOperator(TargetsCode target, AddOperator add, string methodName)
     {
         var valA = GetFloatArg(methodName, add.A, target);
         var valB = GetFloatArg(methodName, add.B, target);
@@ -191,7 +190,7 @@ internal static class GenScript
 
         return (rez, NoDispose());
     }
-    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildSubtractOperator(Target target, SubtractOperator sub, string methodName)
+    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildSubtractOperator(TargetsCode target, SubtractOperator sub, string methodName)
     {
         var valA = GetFloatArg(methodName, sub.A, target);
         var valB = GetFloatArg(methodName, sub.B, target);
@@ -203,7 +202,7 @@ internal static class GenScript
 
         return (rez, NoDispose());
     }
-    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildMultiplyOperator(Target target, MultiplyOperator sub, string methodName)
+    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildMultiplyOperator(TargetsCode target, MultiplyOperator sub, string methodName)
     {
         var valA = GetFloatArg(methodName, sub.A, target);
         var valB = GetFloatArg(methodName, sub.B, target);
@@ -215,7 +214,7 @@ internal static class GenScript
 
         return (rez, NoDispose());
     }
-    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildDivideOperator(Target target, DivideOperator sub, string methodName)
+    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildDivideOperator(TargetsCode target, DivideOperator sub, string methodName)
     {
         var valA = GetFloatArg(methodName, sub.A, target);
         var valB = GetFloatArg(methodName, sub.B, target);
@@ -228,7 +227,7 @@ internal static class GenScript
         return (rez, NoDispose());
     }
 
-    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildJoinOperator(Target target, JoinString join, string methodName)
+    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildJoinOperator(TargetsCode target, JoinString join, string methodName)
     {
         if (join.IsConstant)
             return (GetConstString(methodName, join.AsConstant), NoDispose());
@@ -244,11 +243,11 @@ internal static class GenScript
         return (rez, [rez]);
     }
     
-    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) CastIntToString(string method, FloatArgument arg, Target target) 
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) CastIntToString(string method, IntArgument arg, TargetsCode target) 
     {
-        throw new Exception("Not implemented");
+        throw new NotImplementedException("Not implemented");
     }
-    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) CastDoubleToString(string method, FloatArgument arg, Target target) 
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) CastDoubleToString(string method, FloatArgument arg, TargetsCode target) 
     {
         var value = GetFloatArg(method, arg, target);
         

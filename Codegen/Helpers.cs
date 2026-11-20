@@ -91,6 +91,39 @@ internal static class Helpers
         }
     }
 
+    extension(LLVMModuleRef moduleRef)
+    {
+        public LLVMValueRef BuildGlobalString(string value, string name = "")
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(name);
+        
+            unsafe
+            {
+                using var text = new MarshaledString(value);
+            
+                var contentTy  = LLVMTypeRef.CreateArray(Generator.Current.Context.Int8Type, (uint)(text.Length + 1));
+                var contentCst = LLVM.ConstStringInContext2(Generator.Current.Context, text, (uint)text.Length, 0);
+
+                var @const = moduleRef.AddGlobal(contentTy, name);
+                LLVM.SetInitializer(@const, contentCst);
+                LLVM.SetGlobalConstant(@const, 1);
+                LLVM.SetLinkage(@const, LLVMLinkage.LLVMPrivateLinkage);
+                LLVM.SetUnnamedAddr(@const, (int)LLVMUnnamedAddr.LLVMGlobalUnnamedAddr);
+                LLVM.SetAlignment(@const, 1);
+                return @const;
+            }
+        }
+
+        public LLVMMethod CreateMethod(LLVMTypeRef returnType, string name, params LLVMTypeRef[] arguments)
+        {
+            var f = LLVMTypeRef.CreateFunction(returnType, arguments, false);
+            var ft = moduleRef.AddFunction(name, f);
+
+            return new(ft, f, returnType, arguments, false);
+        }
+    }
+    
     public static void BuildPrintLine(this LLVMBuilderRef builder, CharPointer text, string name = "") =>
         builder.BuildCall2(Generator.Current.Libs.Puts, [text], name);
     public static CharPointer BuildStrCombine(this LLVMBuilderRef builder, CharPointer left, CharPointer right, string name = "") =>
