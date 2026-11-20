@@ -13,9 +13,6 @@ extern "C" {
 
 __declspec(dllexport) void __cdecl scratch_init();
 
-__declspec(dllexport) void __cdecl looks_say(const char* target, const char* text);
-__declspec(dllexport) void __cdecl looks_think(const char* target, const char* text);
-
 __declspec(dllexport) char* __cdecl operator_join(const char* left, const char* right);
 __declspec(dllexport) char* __cdecl combineStrings_3(const char* left, const char* center, const char* right);
 
@@ -28,6 +25,11 @@ __declspec(dllexport) unsigned int __cdecl actor_count();
 __declspec(dllexport) void __cdecl run_actor_script(Script* scripts, unsigned int index);
 
 __declspec(dllexport) char* __cdecl cast_double_to_string(double value);
+
+__declspec(dllexport) void __cdecl looks_say(const char* target, const char* text);
+__declspec(dllexport) void __cdecl looks_think(const char* target, const char* text);
+
+__declspec(dllexport) void __cdecl motion_goto_xy(Actor& actor, double x, double y);
 
 #ifdef __cplusplus
 }

@@ -4,6 +4,7 @@ using LLVMSharp.Interop;
 using ScratchCompiler.Codegen.ValueTypes;
 using ScratchCompiler.Parser;
 using ScratchCompiler.Parser.Functions.Looks;
+using ScratchCompiler.Parser.Functions.Motion;
 using ScratchCompiler.Parser.Operations;
 
 namespace ScratchCompiler.Codegen;
@@ -33,27 +34,71 @@ internal static class GenScript
     public static uint GenerateScript(Target target, CodeBlock script, LLVMMethod method)
     {
         ResetConstVarCounters();
+        Dictionary<uint, LLVMBasicBlockRef> breakpoints = [];
         
         var stackSize = 0u;
         _currentScript = method;
-        var currentBlock = method.Function.AppendBasicBlock("entry");
-        Current.Builder.PositionAtEnd(currentBlock);
+        var entryBlock = method.Function.AppendBasicBlock("entry");
         
+        var scriptEntry = CreateScriptBreakPoint();
+        Current.Builder.PositionAtEnd(scriptEntry.block);
         foreach (var operation in script.Methods)
-        {
-            switch (operation)
-            {
-                case Say say: BuildSayBlock(target, say, method.Function.Name); break;
-                case Think think: BuildThinkBlock(target, think, method.Function.Name); break;
-                default: throw Generator.NotImplemented(method);
-            }  
-        }
+            BuildFunctionBlock(target, operation, method.Function.Name);
 
-        Builder.BuildRetVoid();
+        var exitBlock = method.Function.AppendBasicBlock("exit");
+        Builder.BuildBr(exitBlock);
+        Current.Builder.PositionAtEnd(exitBlock);
+        BuildBreakScriptRun(0);
+        
+        BuildEntrySwitch();
         _currentScript = null!;
         return stackSize;
+
+        (LLVMBasicBlockRef block, uint index) CreateScriptBreakPoint()
+        {
+            var key = FindFreeBreakpoint();
+            var block = method.Function.AppendBasicBlock("Script #" + key);
+            breakpoints.Add(key, block);
+            return (block, key);
+        }
+        uint FindFreeBreakpoint()
+        {
+            uint key = 1;
+            var keys = breakpoints.Keys;
+            while (keys.Contains(key))
+                ++key;
+            return key;
+        }
+
+        void BuildEntrySwitch()
+        {
+            Builder.PositionAtEnd(entryBlock);
+            var @goto = Builder.BuildLoad2(LLVMTypeRef.Int32, method.Function.GetParam(2), "script_point");
+            var @switch = Builder.BuildSwitch(@goto, exitBlock, (uint)breakpoints.Count);
+            unsafe
+            {
+                foreach (var breakpoint in breakpoints)
+                    LLVM.AddCase(@switch, LLVMValueRef.CreateConst(breakpoint.Key), breakpoint.Value);
+            }
+        }
     }
-    
+
+    private static void BuildFunctionBlock(Target target, Function function, string methodName)
+    {
+        switch (function)
+        {
+            case Say say: BuildSayBlock(target, say, methodName); break;
+            case Think think: BuildThinkBlock(target, think, methodName); break;
+            case MoveTo @goto: BuildGotoBlock(target, @goto, methodName); break;
+            default: throw Generator.NotImplemented(function);
+        }
+    }
+    public static void BuildBreakScriptRun(uint index)
+    {
+        Builder.BuildStore(LLVMValueRef.CreateConst(index), _currentScript!.Function.GetParam(2));
+        Builder.BuildRetVoid();
+    }
+
     private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetStringArg(string method, Argument arg, Target target)
     {
         switch (arg)
@@ -92,13 +137,13 @@ internal static class GenScript
                     var field = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript.Function.GetParam(0), 1, "field: x");
                     var x = Builder.BuildLoad2(Current.Context.DoubleType, field);
                     return (x, NoDispose());
-                } break;
+                }
                 case GetDouble.SystemSources.YPosition:
                 {
                     var field = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript.Function.GetParam(0), 2, "field: y");
                     var x = Builder.BuildLoad2(Current.Context.DoubleType, field);
                     return (x, NoDispose());
-                } break;
+                }
             }
         throw Generator.NotImplemented(get);
     }
@@ -115,6 +160,22 @@ internal static class GenScript
         var text = GetStringArg(methodName, think.Text, target);
         Builder.BuildCall2(Current.Libs.LooksThink, [Current.TargetNames[target], text.Value]);
         foreach (var @ref in text.toFree)
+            Builder.BuildFree(@ref);
+    }
+
+    public static void BuildGotoBlock(Target target, MoveTo @goto, string methodName)
+    {
+        if (@goto.Destination.IsT0)
+            throw Generator.NotImplemented(@goto);
+
+        var x = GetFloatArg(methodName, @goto.Destination.AsT1.Item1, target);
+        var y = GetFloatArg(methodName, @goto.Destination.AsT1.Item2, target);
+
+        var actor = _currentScript!.Function.GetParam(0);
+
+        Builder.BuildCall2(Current.Libs.MotionMoveToXY, [actor, x.Value, y.Value]);
+        
+        foreach (var @ref in x.toFree.Concat(y.toFree))
             Builder.BuildFree(@ref);
     }
 

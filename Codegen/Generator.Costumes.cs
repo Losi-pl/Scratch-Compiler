@@ -38,8 +38,8 @@ partial class Generator
                 var memory = new MemoryStream();
                 stream.CopyTo(memory);
 
-                string bodyName = $"{target.Name}::Costume::{costume.AssetID}::Body";
-                string sizeName = $"{target.Name}::Costume::{costume.Name}::Size";
+                string bodyName = $"Actor::{target.Name}::Costume::{costume.AssetID}::Body";
+                string sizeName = $"Actor::{target.Name}::Costume::{costume.AssetID}::Size";
                 unsafe {
                     LLVMValueRef @const;
                     fixed (byte* buffer = memory.ToArray())

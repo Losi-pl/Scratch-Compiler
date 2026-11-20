@@ -18,6 +18,12 @@ void looks_think(const char* target, const char* text)
     std::cout << target << " is thinking: " << text << '\n';
 }
 
+void __cdecl motion_goto_xy(Actor& actor, double x, double y)
+{
+    actor.set_x(x);
+    actor.set_y(y);
+}
+
 static std::list<void*> actors;  // NOLINT(bugprone-throwing-static-initialization, misc-use-anonymous-namespace)
 
 std::list<void*>* get_actors() { return &actors; }
