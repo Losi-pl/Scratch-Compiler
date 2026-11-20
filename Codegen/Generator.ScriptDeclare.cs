@@ -10,7 +10,7 @@ partial class Generator
     private static void DeclareScriptMethods(SyntaxTree tree)
     {
         var generalEventType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [Current.Libs.ActorStruct.Pointer]);
-        Dictionary<Target, (ScriptData[] scripts, TargetEvents events)> scriptList = [];
+        Dictionary<Target, (ScriptData[] scripts, TargetEvents events, EmbeddedFile[] costumes)> scriptList = [];
         
         foreach (var target in tree.GetAllTargets())
         {
@@ -54,7 +54,7 @@ partial class Generator
             var onStartFun = GenStartForOnStart();
 
             var eventStruct = GenEventsStruct(engineFun, onStartFun);
-            scriptList[target] = (scripts.ToArray(), new(engineFun, onStartFun, eventStruct));
+            scriptList[target] = (scripts.ToArray(), new(engineFun, onStartFun, eventStruct), EmbedCostumes(target));
 
 
             LLVMValueRef GenEventsStruct(LLVMMethod update, LLVMMethod onStart)

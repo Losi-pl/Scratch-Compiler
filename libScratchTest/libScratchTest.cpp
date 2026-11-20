@@ -6,7 +6,7 @@ int main(int argc, char* argv[])
 {
     char str1[] = "Ala ma ";
     char str2[] = "kota";
-    auto combined = combineStrings_2(str1, str2);
+    auto combined = operator_join(str1, str2);
     
     
     char str3[] = "Ala ";

@@ -6,11 +6,13 @@ public class CodeSet
 {
     private LLVMContextRef _context;
     private LLVMModuleRef[] _modules;
+    private LLVMModuleRef[] _resources;
 
-    internal CodeSet(LLVMContextRef context, LLVMModuleRef[] modules)
+    internal CodeSet(LLVMContextRef context, LLVMModuleRef[] modules, LLVMModuleRef[] resources)
     {
         _context = context;
         _modules = modules;
+        _resources = resources;
     }
     
     public void Compile(string path)
@@ -30,7 +32,7 @@ public class CodeSet
         Directory.CreateDirectory(tempFolder);
 
         var objects = new List<string>();
-        foreach (var module in _modules)
+        foreach (var module in _modules.Concat(_resources))
         {
             var filePath = $"{tempFolder}\\{module.SourceFileName}.obj";
             objects.Add(filePath); File.Create(filePath).Close();

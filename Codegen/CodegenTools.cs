@@ -9,10 +9,11 @@ internal class CodegenTools
 {
     public LLVMContextRef Context;
     public LLVMModuleRef Module;
+    public LLVMModuleRef ResourceModule;
     public LLVMBuilderRef Builder;
     public LibraryParts Libs = null!;
 
-    public FrozenDictionary<Target, (ScriptData[] Scripts, TargetEvents Events)> Scripts = null!;
+    public FrozenDictionary<Target, (ScriptData[] Scripts, TargetEvents Events, EmbeddedFile[] costumes)> Scripts = null!;
 
     public FrozenDictionary<Target, CharPointer> TargetNames = null!;
 }

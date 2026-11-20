@@ -11,6 +11,16 @@ internal static class Helpers
         ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(name);
         
+        if(args.Length != method.ParamTypes.Length)
+            throw new ArgumentException("The number of arguments does not match the number of parameters", nameof(args));
+        /*for (int i = 0; i < args.Length; i++) TODO See how to fix this
+        {
+            var t = args[i].TypeOf;
+            if (t == method.ParamTypes[i])
+                continue;
+            throw new ArgumentException($"Type of argument {i} does not mach: {t} != {method.ParamTypes[i]}");
+        }*/
+        
         return builder.BuildCall2(method.FunctionType, method.Function, args, name);
     }
     public static LLVMValueRef CreateGlobalConstString(this in LLVMBuilderRef _, string value, string name = "")

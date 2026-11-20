@@ -15,19 +15,16 @@ public static partial class Generator
     
     public static CodeSet GenerateCode(this SyntaxTree tree, string? projectName = null)
     {
-        var contextCs = new LLVMSharp.LLVMContext();
-        var moduleCs = LLVMSharp.Module.Create(contextCs, projectName ?? "scratch-app");
-        var builderCs = new LLVMSharp.IRBuilder(contextCs);
-
-        var context = contextCs.Handle;
-        var module = moduleCs.Handle;
-        var builder = builderCs.Handle;
+        var context = LLVMContextRef.Create();
+        var module = context.CreateModuleWithName(projectName ?? "scratch-app");
+        var builder = context.CreateBuilder();
 
         Current = new()
         {
             Context = context,
             Module = module,
-            Builder = builder
+            Builder = builder,
+            ResourceModule = context.CreateModuleWithName($"{module.SourceFileName}.resources")
         };
         Current.Libs = new(Current);
         MapActorNames(tree);
@@ -49,10 +46,19 @@ public static partial class Generator
             builder.PositionAtEnd(mainBlock);
             
             builder.BuildCall2(Current.Libs.ScratchInit, []);
+            builder.BuildCall2(Current.Libs.InitWindow, [builder.BuildGlobalString(module.SourceFileName, "Scratch::Project-Name")]);
             builder.BuildCall2(actorSetup, []);
             builder.BuildCall2(actorEnumeration, [runOnStartScripts.Function, Current.Libs.Nullptr]);
             builder.BuildCall2(actorEnumeration, [scriptUpdates.Function, Current.Libs.Nullptr]);
-            builder.BuildCall2(Current.Libs.StartApp, []);
+            {
+                var testM = LLVMMethod.CreateMethod(Current.Context.VoidType, "test_load_image", [Current.Libs.PointerType, Current.Context.Int64Type]);
+                var testImg = tree.Actors.SelectMany(a => Enumerable.Sequence(0, a.Costumes.Length, 1)
+                    .Select(c => (actor: a, costime: c))).First(ac => ac.actor.Costumes[ac.costime].FileFormat != CostumeFormat.SVG);
+                var image = Current.Scripts[testImg.actor].costumes[testImg.costime];
+                var size = builder.BuildLoad2(LLVMTypeRef.Int64, image.Size!.Value, "image_size");
+                builder.BuildCall2(testM, [image.Content, size]);
+            }
+            builder.BuildCall2(Current.Libs.RunApp, []);
 
             builder.BuildCall2(Current.Libs.ExitApp, [LLVMValueRef.CreateConst(0)]);
             builder.BuildUnreachable();
@@ -62,7 +68,7 @@ public static partial class Generator
         LLVM.InitializeNativeAsmParser();
         LLVM.InitializeNativeAsmPrinter();
 
-        return new(context, [module]);
+        return new(context, [Current.Module], [Current.ResourceModule]);
     }
 
     private static void MapActorNames(SyntaxTree tree)
@@ -84,7 +90,7 @@ public static partial class Generator
         
         LLVMBasicBlockRef? entryBlock = null;
         var actorSize = LLVMValueRef.CreateConst(Current.Libs.ActorStruct.ByteSize);
-        foreach (var actor in tree.Actors)
+        foreach (var actor in tree.Actors.Reverse())
         {
             if (entryBlock.HasValue) {
                 entryBlock = actorSetup.Function.AppendBasicBlock("Construct: " + actor.Name);
@@ -99,16 +105,36 @@ public static partial class Generator
             var scripts = Current.Scripts[actor];
             var posX = LLVMValueRef.CreateConst(actor.DefaultPosition.x);                                             // Const: Start position x
             var posY = LLVMValueRef.CreateConst(actor.DefaultPosition.y);                                             // Const: Start position y
-            var scriptCount = LLVMValueRef.CreateConst(scripts.Scripts.Length);                                       // Const: Count of actor scripts
+            var scriptCount = LLVMValueRef.CreateConst(scripts.Scripts.Length);                                       // Const: Count of Actor scripts
+            var defCostume = LLVMValueRef.CreateConst(actor.DefaultCostume);                                          // Const: Default Costume index
+            var costumeCount = LLVMValueRef.CreateConst((uint)actor.Costumes.Length);                                 // Const: Costume count
+            var nullptr = LLVMValueRef.CreateConstPointerNull(Current.Libs.PointerType);
             
             var inst = builder.BuildCall2(Current.Libs.Malloc, [actorSize], actor.Name);                  // Allocate space for an Actor
             builder.BuildCall2(Current.Libs.RegisterActor, [inst]);                                                   // Register the actor
+            var costumes = builder.BuildCall2(Current.Libs.CreateCostumeStorage, [costumeCount],          // Create costume storage
+                $"{actor.Name}::Costumes");                                                                      // ^^^
             builder.BuildCall2(Current.Libs.ConstructActor, [inst, Current.TargetNames[actor],                        // Construct actor's body
-                Current.Scripts[actor].Events.Struct, posX, posY, scriptCount]);                                      // ^^^
-            var scriptField = builder.BuildStructGEP2(Current.Libs.ActorStruct, inst, 4);          // Find field of script array
+                Current.Scripts[actor].Events.Struct, posX, posY, scriptCount, costumes, defCostume]);                // ^^^
+            var scriptField = builder.BuildStructGEP2(Current.Libs.ActorStruct, inst, 4,           // Find field of script array
+                $"field: {actor.Name}::Scripts");                                                                // ^^^
             var scriptArray = builder.BuildLoad2(Current.Libs.ScriptHolder.Pointer, scriptField,          // Get script list
                     $"{actor.Name}::Scripts");                                                                  // ^^^
 
+            
+            foreach (var costume in actor.Costumes.Zip(Current.Scripts[actor].costumes).Select((c, i) => (sys: c.First, llvm: c.Second, ind: i)))
+            {
+                var index = LLVMValueRef.CreateConst((uint)costume.ind);
+                var name = builder.BuildGlobalString(costume.sys.Name, $"{actor.Name}::{costume.sys.AssetID}::Name");
+                if (costume.sys.FileFormat == CostumeFormat.SVG)
+                    builder.BuildCall2(Current.Libs.LoadCostumeFromSvg, [costumes, index, costume.llvm.Content, name]);
+                else
+                {
+                    var size = builder.BuildLoad2(Current.Context.Int64Type, costume.llvm.Size!.Value, $"{actor.Name}::{costume.sys.AssetID}::Size");   
+                    builder.BuildCall2(Current.Libs.LoadCostumeFromData, [costumes, index, costume.llvm.Content, size, name]);
+                }
+            }
+            
             for (int i = 0; i < scripts.Scripts.Length; i++)
             {
                 ref var script = ref scripts.Scripts[i];
