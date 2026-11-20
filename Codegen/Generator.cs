@@ -114,7 +114,7 @@ public static partial class Generator
                     $"{actor.Name}::Scripts");                                                                  // ^^^
 
             
-            foreach (var costume in actor.Costumes.Zip(Current.Scripts[actor].costumes).Select((c, i) => (sys: c.First, llvm: c.Second, ind: i)))
+            foreach (var costume in actor.Costumes.Zip(Current.Scripts[actor].Costumes).Select((c, i) => (sys: c.First, llvm: c.Second, ind: i)))
             {
                 var index = LLVMValueRef.CreateConst((uint)costume.ind);
                 var name = builder.BuildGlobalString(costume.sys.Name, $"{actor.Name}::{costume.sys.AssetID}::Name");
