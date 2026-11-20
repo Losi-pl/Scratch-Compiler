@@ -52,6 +52,7 @@ void load_costume_data(Actor::CostumesStorage* storage, unsigned int index, cons
 {
     auto& costume = *reinterpret_cast<Actor::Costume*>(reinterpret_cast<uint8_t*>(storage) + sizeof(Actor::CostumesStorage) + (sizeof(Actor::Costume) * index));
     ::new (&costume) Actor::Costume(data, size, name, 1.f);
+    costume.sprite.setOrigin({static_cast<float>(costume.texture.getSize().x) / 2.f, static_cast<float>(costume.texture.getSize().y) / 2.f});
 }
 void load_costume_svg(Actor::CostumesStorage* storage, unsigned int index, const char* svg, const char* name)
 {
@@ -78,6 +79,7 @@ void load_costume_svg(Actor::CostumesStorage* storage, unsigned int index, const
             sf::Image img({width, height}, rgbaPixels);
             ::new (&costume) Actor::Costume(img, name, .5f);
             delete[] rgbaPixels;
+            costume.sprite.setOrigin({static_cast<float>(costume.texture.getSize().x) / 2.f, static_cast<float>(costume.texture.getSize().y) / 2.f});
         }
     }
     catch (std::exception& e)
@@ -85,11 +87,4 @@ void load_costume_svg(Actor::CostumesStorage* storage, unsigned int index, const
         std::cout << "Error: " << e.what() << '\n';
         _exit(-1);
     }
-}
-void set_costume_center(Actor::CostumesStorage* storage, unsigned int index, const double x, const double y)
-{
-    auto& costume = *reinterpret_cast<Actor::Costume*>(reinterpret_cast<uint8_t*>(storage) + sizeof(Actor::CostumesStorage) + (sizeof(Actor::Costume) * index));
-    auto cen_x = static_cast<float>(x * (1.0 / static_cast<double>(costume.imageScale)));
-    auto cen_y = static_cast<float>(y * (1.0 / static_cast<double>(costume.imageScale)));
-    costume.sprite.setOrigin({cen_x, cen_y});
 }

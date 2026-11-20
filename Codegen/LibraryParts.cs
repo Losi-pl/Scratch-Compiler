@@ -44,7 +44,6 @@ internal class LibraryParts
         public readonly LLVMMethod CreateCostumeStorage;
         public readonly LLVMMethod LoadCostumeFromData;
         public readonly LLVMMethod LoadCostumeFromSvg;
-        public readonly LLVMMethod SetCostumeCenter;
         
     #endregion
     
@@ -121,7 +120,6 @@ internal class LibraryParts
             CreateCostumeStorage = LLVMMethod.CreateMethod(PointerType, "create_costume_storage", [tools.Context.Int32Type]);
             LoadCostumeFromData = LLVMMethod.CreateMethod(tools.Context.VoidType, "load_costume_data", [PointerType, tools.Context.Int32Type, PointerType, tools.Context.Int64Type, charPtr]);
             LoadCostumeFromSvg = LLVMMethod.CreateMethod(tools.Context.VoidType, "load_costume_svg", [PointerType, tools.Context.Int32Type, charPtr, charPtr]);
-            SetCostumeCenter = LLVMMethod.CreateMethod(tools.Context.VoidType, "set_costume_center", [PointerType, tools.Context.Int32Type, tools.Context.DoubleType, tools.Context.DoubleType]);
         }
         
         {

@@ -119,21 +119,11 @@ public static partial class Generator
                 var index = LLVMValueRef.CreateConst((uint)costume.ind);
                 var name = builder.BuildGlobalString(costume.sys.Name, $"{actor.Name}::{costume.sys.AssetID}::Name");
                 if (costume.sys.FileFormat == CostumeFormat.SVG)
-                {
                     builder.BuildCall2(Current.Libs.LoadCostumeFromSvg, [costumes, index, costume.llvm.Content, name]);
-                    builder.BuildCall2(Current.Libs.SetCostumeCenter, [
-                        costumes, index, LLVMValueRef.CreateConst(costume.sys.RotationCenter.x * 2),
-                        LLVMValueRef.CreateConst(costume.sys.RotationCenter.x * 2)
-                    ]);
-                }
                 else
                 {
                     var size = builder.BuildLoad2(Current.Context.Int64Type, costume.llvm.Size!.Value, $"{actor.Name}::{costume.sys.AssetID}::Size");   
                     builder.BuildCall2(Current.Libs.LoadCostumeFromData, [costumes, index, costume.llvm.Content, size, name]);
-                    builder.BuildCall2(Current.Libs.SetCostumeCenter, [
-                        costumes, index, LLVMValueRef.CreateConst(costume.sys.RotationCenter.x),
-                        LLVMValueRef.CreateConst(costume.sys.RotationCenter.x)
-                    ]);
                 }
             }
             
@@ -169,6 +159,4 @@ public static partial class Generator
 
     internal static Exception NotImplemented(object element) => (Exception)System.Reflection.Assembly.GetAssembly(typeof(System.Reflection.Assembly))!
         .GetType("System.NotImplementedException")!.GetConstructors()[1].Invoke([$"Element {element.ToString().Truncate(32)} is not yet implemented"]);
-    
-    
 }

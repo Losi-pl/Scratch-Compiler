@@ -42,5 +42,4 @@ extern "C" {
     void __cdecl construct_actor(Actor* actor, char* name, Events* script_events, double x, double y, unsigned int script_count, void* costumes, unsigned int costume_index, double scale);
     void __cdecl load_costume_data(Actor::CostumesStorage* storage, unsigned int index, const void* data, size_t size, const char* name);
     void __cdecl load_costume_svg(Actor::CostumesStorage* storage, unsigned int index, const char* svg, const char* name);
-    void __cdecl set_costume_center(Actor::CostumesStorage* storage, unsigned int index, double x, double y);
 }

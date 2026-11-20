@@ -106,7 +106,6 @@ char* cast_double_to_string(const double value)
         }
     }
 }
-
 void* get_iteration_next(std::list<void*>::iterator& iterator, std::list<void*>& list, bool removeLast)
 {
     if (iterator == list.end())
@@ -129,7 +128,6 @@ void* get_iteration_next(std::list<void*>::iterator& iterator, std::list<void*>&
     
     return value;
 }
-
 void run_actor_script(Script* scripts, unsigned int index)
 {
     auto script = &scripts[index];
