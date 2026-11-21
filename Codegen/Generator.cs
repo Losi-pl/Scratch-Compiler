@@ -42,10 +42,9 @@ public static partial class Generator
             
             builder.BuildCall2(Current.Libs.ScratchInit, []);
             builder.BuildCall2(Current.Libs.InitWindow, [builder.BuildGlobalString(module.SourceFileName, "Scratch::Project-Name")]);
-            foreach (var target in tree.GetAllTargets())
-                builder.BuildCall2(Current.Targets[target].ConstructTarget, []);
-            builder.BuildCall2(actorEnumeration, [runOnStartScripts.Function, Current.Libs.Nullptr]);
-            builder.BuildCall2(actorEnumeration, [scriptUpdates.Function, Current.Libs.Nullptr]);
+            builder.BuildCall2(Current.Targets[tree.Scene].ConstructTarget, []);
+            foreach (var actor in tree.Actors.OrderBy(a => a.LayerOrder))
+                builder.BuildCall2(Current.Targets[actor].ConstructTarget, []);
             builder.BuildCall2(Current.Libs.RunApp, []);
 
             builder.BuildCall2(Current.Libs.ExitApp, [LLVMValueRef.CreateConst(0u)]);

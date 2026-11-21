@@ -100,6 +100,16 @@ namespace
         return {(static_cast<float>(winSize.x) / 2.f) + static_cast<float>(actor.x * 2.0), 
                 (static_cast<float>(winSize.y) / 2.f) - static_cast<float>(actor.y * 2.0)};
     }
+    
+    void execute_onStart_scripts()
+    {
+        reinterpret_cast<void(*)()>(stage_events->OnStart)();
+        for (const auto ptr : *get_actors())
+        {
+            auto& actor = *static_cast<Actor*>(ptr);
+            reinterpret_cast<void(*)(Actor*)>(actor.events->OnStart)(&actor);
+        }
+    }
 }
 
 void create_window(const char* title)
@@ -115,6 +125,8 @@ void start_app()
     shape.setFillColor(Color::Blue);
     shape.setOrigin({5.f, 5.f});
     
+    execute_onStart_scripts();
+    
     window.setVisible(true);   
     while (window.isOpen())
     {
@@ -125,9 +137,13 @@ void start_app()
         }
         
         window.clear(Color::White);
+        reinterpret_cast<void(*)()>(stage_events->Update)();
+        
         for(auto ptr : *get_actors())
         {
-            const Actor& actor = *static_cast<const Actor*>(ptr);
+            Actor& actor = *static_cast<Actor*>(ptr);
+            reinterpret_cast<void(*)(Actor*)>(actor.events->Update)(&actor);
+            
             auto& costume = *reinterpret_cast<Actor::Costume*>(static_cast<uint8_t*>(actor.costumes) + sizeof(Actor::CostumesStorage) + (sizeof(Actor::Costume) * actor.costume_index));
             costume.sprite.setPosition(calculate_position(actor));
             
