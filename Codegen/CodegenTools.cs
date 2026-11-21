@@ -1,6 +1,5 @@
 ﻿using System.Collections.Frozen;
 using LLVMSharp.Interop;
-using ScratchCompiler.Codegen.ValueTypes;
 using ScratchCompiler.Parser;
 
 namespace ScratchCompiler.Codegen;

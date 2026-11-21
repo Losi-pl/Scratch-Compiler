@@ -10,6 +10,7 @@ internal class LibraryParts
 
         public readonly LLVMMethod Puts;
         public readonly LLVMMethod Malloc;
+        public readonly LLVMMethod AlignedMalloc;
         public readonly LLVMMethod ExitApp;
         public readonly LLVMTypeRef PointerType;
         public readonly LLVMValueRef Nullptr;
@@ -75,6 +76,7 @@ internal class LibraryParts
         Nullptr = LLVMValueRef.CreateConstPointerNull(PointerType);
         Puts = LLVMMethod.CreateMethod(tools.Context.VoidType, "puts", [LLVMTypeRef.CreatePointer(tools.Context.Int8Type, 0)]);
         Malloc = LLVMMethod.CreateMethod(PointerType, "malloc", [tools.Context.Int64Type]);
+        AlignedMalloc = LLVMMethod.CreateMethod(PointerType, "_aligned_malloc", [tools.Context.Int64Type, tools.Context.Int64Type]);
         ExitApp = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "_exit", [Generator.Current.Context.Int32Type]);
         RunApp = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "start_app", []);
         InitWindow = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "create_window", [PointerType]);

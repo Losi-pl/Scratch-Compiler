@@ -8,6 +8,14 @@
 #include <iostream>
 #include <ostream>
 
+extern "C" {
+    Events* stage_events = nullptr;
+    void* stage_scripts = nullptr;
+    unsigned int stage_script_count = 0;
+    Actor::CostumesStorage* stage_backdrops = nullptr;
+    unsigned int stage_backdrop_index = 0;
+}
+
 void looks_say(const char* target, const char* text)
 {
     std::cout << target << " is saying: " << text << '\n';

@@ -36,6 +36,7 @@ public class CodeSet
         {
             var filePath = $"{tempFolder}\\{name}.obj";
             objects.Add(filePath); File.Create(filePath).Close();
+            Console.WriteLine($"Compiling: {module.SourceFileName}");
             targetMachine.EmitToFile(module, filePath, LLVMCodeGenFileType.LLVMObjectFile);
         }
 

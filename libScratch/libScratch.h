@@ -11,6 +11,12 @@ __declspec(dllexport) std::list<void*>::iterator __cdecl begin_actor_iteration()
 extern "C" {
 #endif
 
+extern Events* stage_events;
+extern void* stage_scripts;
+extern unsigned int stage_script_count;
+extern Actor::CostumesStorage* stage_backdrops;
+extern unsigned int stage_backdrop_index;
+
 __declspec(dllexport) void __cdecl scratch_init();
 
 __declspec(dllexport) char* __cdecl operator_join(const char* left, const char* right);

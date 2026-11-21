@@ -1,11 +1,12 @@
-﻿using LLVMSharp.Interop;
+﻿using System.Collections.Immutable;
+using LLVMSharp.Interop;
 using ScratchCompiler.Parser;
 
 namespace ScratchCompiler.Codegen;
 
 partial class Generator
 {
-    internal static EmbeddedFile[] EmbedCostumes(Target target)
+    internal static ImmutableArray<EmbeddedFile> EmbedCostumes(Target target)
     {
         List<EmbeddedFile> costumes = [];
         var nullptr = LLVMValueRef.CreateConstPointerNull(Current.Libs.PointerType);
@@ -69,6 +70,8 @@ partial class Generator
                 costumes.Add(new(body, bodySize));
             }
         }
-        return costumes.ToArray();
+        
+        // ReSharper disable once UseCollectionExpression
+        return costumes.ToImmutableArray();
     }
 }
