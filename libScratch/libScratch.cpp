@@ -7,6 +7,7 @@
 #include <list>
 #include <iostream>
 #include <ostream>
+#include <random>
 
 extern "C" {
     Events* stage_events = nullptr;
@@ -32,8 +33,24 @@ void __cdecl motion_goto_xy(Actor& actor, double x, double y)
     actor.set_y(y);
 }
 
+void __cdecl motion_goto_random(Actor& actor)
+{
+    actor.set_x(random_int(-240, 240));
+    actor.set_y(random_int(-180, 180));
+}
+
 static std::list<void*> actors;  // NOLINT(bugprone-throwing-static-initialization, misc-use-anonymous-namespace)
 
+double random_double(double min, double max) {
+    thread_local std::mt19937_64 random_engine{std::random_device{}()};
+    std::uniform_real_distribution dist(min, max);
+    return dist(random_engine);
+}
+double random_int(int min, int max) {
+    thread_local std::mt19937_64 random_engine{std::random_device{}()};
+    std::uniform_int_distribution dist(min, max);
+    return dist(random_engine);
+}
 std::list<void*>* get_actors() { return &actors; }
 void scratch_init() { actors = std::list<void*>(); }
 void register_new_actor(Actor* actor) { actors.push_back(actor); }

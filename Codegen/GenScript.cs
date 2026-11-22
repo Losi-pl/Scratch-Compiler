@@ -58,6 +58,7 @@ internal static class GenScript
             _stackSize = 0u;
 
             _waitArg = null;
+            _waitExit = null;
         }
         void BuildEntrySwitch()
         {
@@ -182,18 +183,29 @@ internal static class GenScript
 
     private static void BuildGotoBlock(TargetsCode target, MoveTo @goto, string methodName)
     {
-        if (@goto.Destination.IsT0)
-            throw Generator.NotImplemented(@goto);
+        switch (@goto.Destination)
+        {
+            case { IsT1: true, AsT1: var dest }:
+            {
+                var x = GetFloatArg(methodName, dest.Item1, target);
+                var y = GetFloatArg(methodName, dest.Item2, target);
 
-        var x = GetFloatArg(methodName, @goto.Destination.AsT1.Item1, target);
-        var y = GetFloatArg(methodName, @goto.Destination.AsT1.Item2, target);
+                var actor = _currentScript!.Function.GetParam(0);
 
-        var actor = _currentScript!.Function.GetParam(0);
-
-        Builder.BuildCall2(Current.Libs.MotionMoveToXY, [actor, x.Value, y.Value]);
+                Builder.BuildCall2(Current.Libs.MotionMoveToXY, [actor, x.Value, y.Value]);
         
-        foreach (var @ref in x.toFree.Concat(y.toFree))
-            Builder.BuildFree(@ref);
+                foreach (var @ref in x.toFree.Concat(y.toFree))
+                    Builder.BuildFree(@ref);  
+            } return;
+            case { IsT0: true, AsT0: var dest }:
+            {
+                switch (dest)
+                {
+                    case MoveTo.RelativePosition.Random: Builder.BuildCall2(Current.Libs.MotionMoveToRandom, [_currentScript!.Function.GetParam(0)]); return;
+                }
+            } break;
+        }
+        throw Generator.NotImplemented(@goto);
     }
 
     private static void BuildWaitBlock(TargetsCode target, Wait wait, string methodName)
@@ -224,7 +236,7 @@ internal static class GenScript
         Builder.PositionAtEnd(breakPoint.block);
         var @continue = _currentScript!.Function.AppendBasicBlock("control_wait_continue");
         now = Builder.BuildCall2(Current.Libs.SensingTimer, [], "now");
-        waitTo = Builder.BuildLoad2(Current.Context.DoubleType, GetFieldInStack(_waitArg.Value));
+        waitTo = Builder.BuildLoad2(Current.Context.DoubleType, GetFieldInStack(_waitArg.Value), "wait_to");
         var condition = Builder.BuildFCmp(LLVMRealPredicate.LLVMRealOGE, now, waitTo);
         Builder.BuildCondBr(condition, @continue, _waitExit.Value);
         Builder.PositionAtEnd(@continue);

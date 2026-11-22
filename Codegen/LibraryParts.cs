@@ -54,6 +54,7 @@ internal class LibraryParts
         public readonly LLVMMethod ActorSetPosY;
         // ReSharper disable once InconsistentNaming
         public readonly LLVMMethod MotionMoveToXY;
+        public readonly LLVMMethod MotionMoveToRandom;
 
     #endregion
 
@@ -127,6 +128,7 @@ internal class LibraryParts
             ActorSetPosX = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_x@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
             ActorSetPosY = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_y@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
             MotionMoveToXY = LLVMMethod.CreateMethod(tools.Context.VoidType, "motion_goto_xy", [ActorStruct.Pointer, tools.Context.DoubleType, tools.Context.DoubleType]);
+            MotionMoveToRandom = LLVMMethod.CreateMethod(tools.Context.VoidType, "motion_goto_random", [ActorStruct.Pointer]);
             
             CreateCostumeStorage = LLVMMethod.CreateMethod(PointerType, "create_costume_storage", [tools.Context.Int32Type]);
             LoadCostumeFromData = LLVMMethod.CreateMethod(tools.Context.VoidType, "load_costume_data", [PointerType, tools.Context.Int32Type, PointerType, tools.Context.Int64Type, charPtr]);

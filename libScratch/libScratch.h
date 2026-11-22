@@ -21,6 +21,8 @@ __declspec(dllexport) void __cdecl scratch_init();
 
 __declspec(dllexport) char* __cdecl operator_join(const char* left, const char* right);
 __declspec(dllexport) char* __cdecl combineStrings_3(const char* left, const char* center, const char* right);
+__declspec(dllexport) double __cdecl random_double(double min, double max);
+__declspec(dllexport) double __cdecl random_int(int min, int max);
 
 __declspec(dllexport) void __cdecl register_new_actor(Actor* actor);
 __declspec(dllexport) void* __cdecl get_iteration_next(std::list<void*>::iterator& iterator, std::list<void*>& list, bool removeLast);
@@ -36,6 +38,7 @@ __declspec(dllexport) void __cdecl looks_say(const char* target, const char* tex
 __declspec(dllexport) void __cdecl looks_think(const char* target, const char* text);
 
 __declspec(dllexport) void __cdecl motion_goto_xy(Actor& actor, double x, double y);
+__declspec(dllexport) void __cdecl motion_goto_random(Actor& actor);
 
 #ifdef __cplusplus
 }
