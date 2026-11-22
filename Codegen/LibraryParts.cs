@@ -69,6 +69,12 @@ internal class LibraryParts
         public readonly LLVMMethod OperatorJoin;
 
     #endregion
+
+    #region Sensing
+
+    public readonly LLVMMethod SensingTimer;
+
+    #endregion
     
     public LibraryParts(CodegenTools tools)
     {
@@ -136,6 +142,8 @@ internal class LibraryParts
 
         LooksSay = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_say", [charPtr, charPtr]);
         LooksThink = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_think", [charPtr, charPtr]);
+        
+        SensingTimer  = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "sensing_timer", []);
 
         HotAttribute = Generator.Current.Context.CreateEnumAttribute("hot", 0);
     }

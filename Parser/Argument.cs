@@ -109,7 +109,7 @@ public abstract class FloatArgument : Argument
         {
             case GetDouble.ScratchXPosCode or GetDouble.ScratchYPosCode or 
                 GetDouble.ScratchRotationCode or GetDouble.ScratchSizeCode or 
-                GetDouble.ScratchVolumeCode:
+                GetDouble.ScratchVolumeCode or GetDouble.ScratchTimerCode:
                 return new GetDouble(GetDouble.SystemSourcesMap[opcode]);
             case AddOperator.ScratchCode:
             {

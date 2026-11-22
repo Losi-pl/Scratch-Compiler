@@ -58,9 +58,11 @@ constexpr char svg_icon[] = R"(
         </g>
     </svg>)";
 
+
 namespace
 {
     RenderWindow window;  // NOLINT(bugprone-throwing-static-initialization)
+    Clock _clock;
     
     Image load_icon()
     {
@@ -103,11 +105,11 @@ namespace
     
     void execute_onStart_scripts()
     {
-        reinterpret_cast<void(*)()>(stage_events->OnStart)();
+        reinterpret_cast<void(__cdecl*)()>(stage_events->OnStart)();
         for (const auto ptr : *get_actors())
         {
             auto& actor = *static_cast<Actor*>(ptr);
-            reinterpret_cast<void(*)(Actor*)>(actor.events->OnStart)(&actor);
+            reinterpret_cast<void(__cdecl*)(Actor*)>(actor.events->OnStart)(&actor);
         }
     }
 }
@@ -119,6 +121,12 @@ void create_window(const char* title)
     window.setIcon(load_icon());
 }
 
+double sensing_timer()
+{
+    auto time = _clock.getElapsedTime();
+    return time.asSeconds();
+}
+
 void start_app()
 {
     CircleShape shape(10.f);
@@ -128,6 +136,9 @@ void start_app()
     execute_onStart_scripts();
     
     window.setVisible(true);   
+    window.setFramerateLimit(30);
+    _clock.reset();
+    _clock.start();
     while (window.isOpen())
     {
         while (const std::optional event = window.pollEvent())
@@ -137,12 +148,12 @@ void start_app()
         }
         
         window.clear(Color::White);
-        reinterpret_cast<void(*)()>(stage_events->Update)();
+        reinterpret_cast<void(__cdecl*)()>(stage_events->Update)();
         
-        for(auto ptr : *get_actors())
-        {
-            Actor& actor = *static_cast<Actor*>(ptr);
-            reinterpret_cast<void(*)(Actor*)>(actor.events->Update)(&actor);
+        auto it = begin_actor_iteration();
+        while (auto* ptr = get_iteration_next(it, *get_actors(), /*removeLast=*/false)) {
+            auto& actor = *static_cast<Actor*>(ptr);
+            reinterpret_cast<void(__cdecl*)(Actor*)>(actor.events->Update)(&actor);
             
             auto& costume = *reinterpret_cast<Actor::Costume*>(static_cast<uint8_t*>(actor.costumes) + sizeof(Actor::CostumesStorage) + (sizeof(Actor::Costume) * actor.costume_index));
             costume.sprite.setPosition(calculate_position(actor));
@@ -154,6 +165,7 @@ void start_app()
             shape.setPosition(calculate_position(actor));
             window.draw(shape);
         }
+        
         window.display();
     }
 }

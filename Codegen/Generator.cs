@@ -26,10 +26,7 @@ public static partial class Generator
         Current.Libs = new(Current);
         
         var main = LLVMMethod.CreateMethod(context.VoidType, "main", []);
-        var actorEnumeration = GenActorEnumerationBody(builder);
-        var scriptUpdates = GenRunScriptUpdates();
-        var runOnStartScripts = GenRunOnStartScripts();
-
+        
         Current.Targets = tree.GetAllTargets().Select(t => new KeyValuePair<Target, TargetsCode>(t, new(t))).ToFrozenDictionary();
         foreach (var target in Current.Targets.Values)
             target.GenMethodContent();

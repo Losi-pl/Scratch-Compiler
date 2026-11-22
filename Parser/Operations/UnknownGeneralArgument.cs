@@ -15,6 +15,8 @@ public class UnknownGeneralArgument(string opcode, OneOf<string, bool, int, floa
     public int AsInt => @const.AsT2;
     public float AsFloat => @const.AsT3;
     
+    public string Opcode => opcode;
+    
     public override string ToString() => @const switch {
         {IsT0: true, AsT0: var t } => $"\"{t}\"",
         {IsT1: true, AsT1: var t } => $"[{t}]",

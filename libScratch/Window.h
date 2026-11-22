@@ -7,6 +7,8 @@ extern "C" {
 void __cdecl create_window(const char* title);
 void __cdecl start_app();
 
+double __cdecl sensing_timer();
+
 #ifdef __cplusplus
 }
 #endif

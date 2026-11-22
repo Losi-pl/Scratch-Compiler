@@ -2,6 +2,7 @@
 using LLVMSharp.Interop;
 using ScratchCompiler.Codegen.ValueTypes;
 using ScratchCompiler.Parser;
+using ScratchCompiler.Parser.Functions.Control;
 using ScratchCompiler.Parser.Functions.Looks;
 using ScratchCompiler.Parser.Functions.Motion;
 using ScratchCompiler.Parser.Operations;
@@ -10,7 +11,9 @@ namespace ScratchCompiler.Codegen;
 
 internal static class GenScript
 {
-    private static int _conStrCount;
+    
+    private static CodegenTools Current => Generator.Current;
+    private static LLVMBuilderRef Builder => Generator.Current.Builder;
 
     // ReSharper disable once UseCollectionExpression
     public static readonly ImmutableArray<LLVMTypeRef> ScriptBodyArgs = new[] {
@@ -21,22 +24,18 @@ internal static class GenScript
     
     public static readonly LLVMTypeRef ScriptBodyType = LLVMTypeRef.CreateFunction(Current.Context.VoidType, [..ScriptBodyArgs]);
     
-    public static void ResetConstVarCounters()
-    {
-        _conStrCount = 0;
-    }
-    
-    private static CodegenTools Current => Generator.Current;
-    private static LLVMBuilderRef Builder => Generator.Current.Builder;
     [ThreadStatic] private static LLVMMethod? _currentScript;
+    [ThreadStatic] private static int _conStrCount;
+    [ThreadStatic] private static Dictionary<uint, LLVMBasicBlockRef>? _breakpoints;
+    [ThreadStatic] private static uint _stackSize;
+    [ThreadStatic] private static uint? _waitArg;
+    [ThreadStatic] private static LLVMBasicBlockRef? _waitExit;
 
     public static uint GenerateScript(TargetsCode target, CodeBlock script, LLVMMethod method)
     {
         ResetConstVarCounters();
-        Dictionary<uint, LLVMBasicBlockRef> breakpoints = [];
-        
-        var stackSize = 0u;
         _currentScript = method;
+        
         var entryBlock = method.Function.AppendBasicBlock("entry");
         
         var scriptEntry = CreateScriptBreakPoint();
@@ -50,38 +49,59 @@ internal static class GenScript
         BuildBreakScriptRun(0);
         
         BuildEntrySwitch();
-        _currentScript = null!;
-        return stackSize;
+        return _stackSize;
 
-        (LLVMBasicBlockRef block, uint index) CreateScriptBreakPoint()
+        void ResetConstVarCounters()
         {
-            var key = FindFreeBreakpoint();
-            var block = method.Function.AppendBasicBlock("Script #" + key);
-            breakpoints.Add(key, block);
-            return (block, key);
-        }
-        uint FindFreeBreakpoint()
-        {
-            uint key = 1;
-            var keys = breakpoints.Keys;
-            while (keys.Contains(key))
-                ++key;
-            return key;
-        }
+            _conStrCount = 0;
+            _breakpoints = [];
+            _stackSize = 0u;
 
+            _waitArg = null;
+        }
         void BuildEntrySwitch()
         {
             Builder.PositionAtEnd(entryBlock);
             var @goto = Builder.BuildLoad2(LLVMTypeRef.Int32, method.Function.GetParam(2), "script_point");
-            var @switch = Builder.BuildSwitch(@goto, exitBlock, (uint)breakpoints.Count);
+            var @switch = Builder.BuildSwitch(@goto, exitBlock, (uint)_breakpoints!.Count);
             unsafe
             {
-                foreach (var breakpoint in breakpoints)
+                foreach (var breakpoint in _breakpoints)
                     LLVM.AddCase(@switch, LLVMValueRef.CreateConst(breakpoint.Key), breakpoint.Value);
             }
         }
     }
+    
+    private static (LLVMBasicBlockRef block, uint index) CreateScriptBreakPoint()
+    {
+        var key = FindFreeBreakpoint();
+        var block = _currentScript!.Function.AppendBasicBlock("Script #" + key);
+        _breakpoints!.Add(key, block);
+        return (block, key);
+        uint FindFreeBreakpoint()
+        {
+            // ReSharper disable once VariableHidesOuterVariable
+            uint key = 1;
+            var keys = _breakpoints!.Keys;
+            while (keys.Contains(key))
+                ++key;
+            return key;
+        }
+    }
 
+    private static LLVMValueRef GetFieldInStack(uint offset)
+    {
+        if(offset == 0)
+            return _currentScript!.Function.GetParam(1);
+        
+        return Builder.BuildGEP2(Current.Context.Int8Type, _currentScript!.Function.GetParam(1), [LLVMValueRef.CreateConst(offset)]);
+    }
+    private static void BuildBreakScriptRun(uint index)
+    {
+        Builder.BuildStore(LLVMValueRef.CreateConst(index), _currentScript!.Function.GetParam(2));
+        Builder.BuildRetVoid();
+    }
+    
     private static void BuildFunctionBlock(TargetsCode target, Function function, string methodName)
     {
         switch (function)
@@ -89,13 +109,9 @@ internal static class GenScript
             case Say say: BuildSayBlock(target, say, methodName); break;
             case Think think: BuildThinkBlock(target, think, methodName); break;
             case MoveTo @goto: BuildGotoBlock(target, @goto, methodName); break;
+            case Wait wait: BuildWaitBlock(target, wait, methodName); break;
             default: throw Generator.NotImplemented(function);
         }
-    }
-    public static void BuildBreakScriptRun(uint index)
-    {
-        Builder.BuildStore(LLVMValueRef.CreateConst(index), _currentScript!.Function.GetParam(2));
-        Builder.BuildRetVoid();
     }
 
     private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetStringArg(string method, Argument arg, TargetsCode target)
@@ -143,18 +159,20 @@ internal static class GenScript
                     var x = Builder.BuildLoad2(Current.Context.DoubleType, field);
                     return (x, NoDispose());
                 }
+                case GetDouble.SystemSources.Timer:
+                    return (Builder.BuildCall2(Current.Libs.SensingTimer, [], "timer"), NoDispose());
             }
         throw Generator.NotImplemented(get);
     }
     
-    public static void BuildSayBlock(TargetsCode target, Say say, string methodName)
+    private static void BuildSayBlock(TargetsCode target, Say say, string methodName)
     {
         var text = GetStringArg(methodName, say.Text, target);
         Builder.BuildCall2(Current.Libs.LooksSay, [target.Name, text.Value]);
         foreach (var @ref in text.toFree)
             Builder.BuildFree(@ref);
     }
-    public static void BuildThinkBlock(TargetsCode target, Think think, string methodName)
+    private static void BuildThinkBlock(TargetsCode target, Think think, string methodName)
     {
         var text = GetStringArg(methodName, think.Text, target);
         Builder.BuildCall2(Current.Libs.LooksThink, [target.Name, text.Value]);
@@ -162,7 +180,7 @@ internal static class GenScript
             Builder.BuildFree(@ref);
     }
 
-    public static void BuildGotoBlock(TargetsCode target, MoveTo @goto, string methodName)
+    private static void BuildGotoBlock(TargetsCode target, MoveTo @goto, string methodName)
     {
         if (@goto.Destination.IsT0)
             throw Generator.NotImplemented(@goto);
@@ -178,7 +196,41 @@ internal static class GenScript
             Builder.BuildFree(@ref);
     }
 
-    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildAddOperator(TargetsCode target, AddOperator add, string methodName)
+    private static void BuildWaitBlock(TargetsCode target, Wait wait, string methodName)
+    {
+        if (_waitArg is null)
+        {
+            _waitArg = _stackSize;
+            _stackSize += sizeof(double);
+        }
+
+        var delay = GetFloatArg(methodName, wait.Delay, target);
+        var now = Builder.BuildCall2(Current.Libs.SensingTimer, [], "now");
+        var waitTo = Builder.BuildFAdd(now, delay.Value, "wait_to");
+        foreach (var @ref in delay.toFree)
+            Builder.BuildFree(@ref);
+        
+        Builder.BuildStore(waitTo, GetFieldInStack(_waitArg.Value));
+        
+        var breakPoint = CreateScriptBreakPoint();
+        BuildBreakScriptRun(breakPoint.index);
+        
+        if (!_waitExit.HasValue)
+        {
+            _waitExit = _currentScript!.Function.AppendBasicBlock("control_wait_exit");
+            Builder.PositionAtEnd(_waitExit.Value);
+            Builder.BuildRetVoid();
+        }
+        Builder.PositionAtEnd(breakPoint.block);
+        var @continue = _currentScript!.Function.AppendBasicBlock("control_wait_continue");
+        now = Builder.BuildCall2(Current.Libs.SensingTimer, [], "now");
+        waitTo = Builder.BuildLoad2(Current.Context.DoubleType, GetFieldInStack(_waitArg.Value));
+        var condition = Builder.BuildFCmp(LLVMRealPredicate.LLVMRealOGE, now, waitTo);
+        Builder.BuildCondBr(condition, @continue, _waitExit.Value);
+        Builder.PositionAtEnd(@continue);
+    }
+    
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildAddOperator(TargetsCode target, AddOperator add, string methodName)
     {
         var valA = GetFloatArg(methodName, add.A, target);
         var valB = GetFloatArg(methodName, add.B, target);
@@ -190,7 +242,7 @@ internal static class GenScript
 
         return (rez, NoDispose());
     }
-    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildSubtractOperator(TargetsCode target, SubtractOperator sub, string methodName)
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildSubtractOperator(TargetsCode target, SubtractOperator sub, string methodName)
     {
         var valA = GetFloatArg(methodName, sub.A, target);
         var valB = GetFloatArg(methodName, sub.B, target);
@@ -202,7 +254,7 @@ internal static class GenScript
 
         return (rez, NoDispose());
     }
-    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildMultiplyOperator(TargetsCode target, MultiplyOperator sub, string methodName)
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildMultiplyOperator(TargetsCode target, MultiplyOperator sub, string methodName)
     {
         var valA = GetFloatArg(methodName, sub.A, target);
         var valB = GetFloatArg(methodName, sub.B, target);
@@ -214,7 +266,7 @@ internal static class GenScript
 
         return (rez, NoDispose());
     }
-    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildDivideOperator(TargetsCode target, DivideOperator sub, string methodName)
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildDivideOperator(TargetsCode target, DivideOperator sub, string methodName)
     {
         var valA = GetFloatArg(methodName, sub.A, target);
         var valB = GetFloatArg(methodName, sub.B, target);
@@ -227,7 +279,7 @@ internal static class GenScript
         return (rez, NoDispose());
     }
 
-    public static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildJoinOperator(TargetsCode target, JoinString join, string methodName)
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildJoinOperator(TargetsCode target, JoinString join, string methodName)
     {
         if (join.IsConstant)
             return (GetConstString(methodName, join.AsConstant), NoDispose());

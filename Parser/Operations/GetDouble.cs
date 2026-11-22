@@ -11,6 +11,7 @@ public class GetDouble : FloatArgument
     public const string ScratchRotationCode = "motion_direction";
     public const string ScratchSizeCode = "looks_size";
     public const string ScratchVolumeCode = "sound_volume";
+    public const string ScratchTimerCode = "sensing_timer";
     
     public static readonly FrozenDictionary<string, SystemSources> SystemSourcesMap = 
         new Dictionary<string, SystemSources>
@@ -18,8 +19,9 @@ public class GetDouble : FloatArgument
             { ScratchXPosCode,     SystemSources.XPosition },
             { ScratchYPosCode,     SystemSources.YPosition },
             { ScratchRotationCode, SystemSources.Rotation },
-            { ScratchSizeCode,     SystemSources.Size },
             { ScratchVolumeCode,   SystemSources.Volume },
+            { ScratchTimerCode,    SystemSources.Timer },
+            { ScratchSizeCode,     SystemSources.Size },
         }.ToFrozenDictionary();
     
     private readonly OneOf<SystemSources, Variable> _source;
@@ -47,6 +49,7 @@ public class GetDouble : FloatArgument
         YPosition,
         Rotation,
         Volume,
+        Timer,
         Size,
     }
 

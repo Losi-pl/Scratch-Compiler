@@ -107,7 +107,7 @@ internal class TargetsCode
     public void GenMethodContent()
     {
         foreach (var script in Scripts)
-            GenScript.GenerateScript(this, script.Script, script.Function);
+            script.StackSize = GenScript.GenerateScript(this, script.Script, script.Function);
         
         GenTargetConstructor(ConstructTarget);
     }
