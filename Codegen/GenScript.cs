@@ -161,14 +161,20 @@ internal static class GenScript
                 case GetDouble.SystemSources.XPosition:
                 {
                     var field = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript.Function.GetParam(0), 1, "field: x");
-                    var x = Builder.BuildLoad2(Current.Context.DoubleType, field);
+                    var x = Builder.BuildLoad2(Current.Context.DoubleType, field, "x");
                     return (x, NoDispose());
                 }
                 case GetDouble.SystemSources.YPosition:
                 {
                     var field = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript.Function.GetParam(0), 2, "field: y");
-                    var x = Builder.BuildLoad2(Current.Context.DoubleType, field);
+                    var x = Builder.BuildLoad2(Current.Context.DoubleType, field, "y");
                     return (x, NoDispose());
+                }
+                case GetDouble.SystemSources.Size:
+                {
+                    var field = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript.Function.GetParam(0), 7, "field: size");
+                    var size = Builder.BuildLoad2(Current.Context.DoubleType, field, "size");
+                    return (size, NoDispose());
                 }
                 case GetDouble.SystemSources.Timer:
                     return (Builder.BuildCall2(Current.Libs.SensingTimer, [], "timer"), NoDispose());

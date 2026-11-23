@@ -104,15 +104,15 @@ internal class LibraryParts
                 PointerType                             // void* method_stack
             }, false, "Scratch::Script");
             ActorStruct = StructType.Create(new[] {
-                charPtr,                                // char* name
-                Generator.Current.Context.DoubleType,   // double pos_x
-                Generator.Current.Context.DoubleType,   // double pos_y
-                ScriptEvents.Pointer,                   // Events* script_events
-                ScriptHolder.Pointer,                   // Script* scripts
-                Generator.Current.Context.Int32Type,    // uint script_count
-                Generator.Current.Context.Int32Type,    // uint current_costume
-                Generator.Current.Context.DoubleType,   // double scale
-                PointerType,                            // Costumes[] costumes
+                charPtr,                                // #0 char* name
+                Generator.Current.Context.DoubleType,   // #1 double pos_x
+                Generator.Current.Context.DoubleType,   // #2 double pos_y
+                ScriptEvents.Pointer,                   // #3 Events* script_events
+                ScriptHolder.Pointer,                   // #4 Script* scripts
+                Generator.Current.Context.Int32Type,    // #5 uint script_count
+                Generator.Current.Context.Int32Type,    // #6 uint current_costume
+                Generator.Current.Context.DoubleType,   // #7 double scale
+                PointerType,                            // #8 Costumes[] costumes
             }, false, "Scratch::Actor");
             
             GetActorIterator = LLVMMethod.CreateMethod(tools.Context.VoidType, "?begin_actor_iteration@@YA?AV?$_List_iterator@V?$_List_val@U?$_List_simple_types@PEAX@std@@@std@@@std@@XZ", [ListHandler.Pointer]);
