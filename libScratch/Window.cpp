@@ -63,6 +63,7 @@ namespace
 {
     RenderWindow window;  // NOLINT(bugprone-throwing-static-initialization)
     Clock _clock;
+    float _timer_start = 0;
     
     Image load_icon()
     {
@@ -121,11 +122,9 @@ void create_window(const char* title)
     window.setIcon(load_icon());
 }
 
-double sensing_timer()
-{
-    auto time = _clock.getElapsedTime();
-    return time.asSeconds();
-}
+double sensing_timer() { return _clock.getElapsedTime().asSeconds() - _timer_start; }
+void sensing_reset_timer() { _timer_start = _clock.getElapsedTime().asSeconds(); }
+double global_timer() { return _clock.getElapsedTime().asSeconds(); }
 
 void start_app()
 {

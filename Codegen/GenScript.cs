@@ -5,6 +5,7 @@ using ScratchCompiler.Parser;
 using ScratchCompiler.Parser.Functions.Control;
 using ScratchCompiler.Parser.Functions.Looks;
 using ScratchCompiler.Parser.Functions.Motion;
+using ScratchCompiler.Parser.Functions.Sensing;
 using ScratchCompiler.Parser.Operations;
 
 namespace ScratchCompiler.Codegen;
@@ -110,15 +111,18 @@ internal static class GenScript
         switch (function)
         {
             #region Motion
-                case MoveTo @goto: BuildGotoBlock(target, @goto, methodName); break;
-                case GlideTo glide: BuildGlideToBlock(target, glide, methodName); break;
+                case MoveTo @goto: BuildGotoBlock(target, @goto, methodName); return;
+                case GlideTo glide: BuildGlideToBlock(target, glide, methodName); return;
             #endregion
             #region Looks
-                case Say say: BuildSayBlock(target, say, methodName); break;
-                case Think think: BuildThinkBlock(target, think, methodName); break;
+                case Say say: BuildSayBlock(target, say, methodName); return;
+                case Think think: BuildThinkBlock(target, think, methodName); return;
             #endregion
             #region Control
-                case Wait wait: BuildWaitBlock(target, wait, methodName); break;
+                case Wait wait: BuildWaitBlock(target, wait, methodName); return;
+            #endregion
+            #region Sensing
+                case ResetTimer reset: BuildResetTimerBlock(target, reset, methodName); return;
             #endregion
             
             default: throw Generator.NotImplemented(function);
@@ -182,21 +186,7 @@ internal static class GenScript
         throw Generator.NotImplemented(get);
     }
     
-    private static void BuildSayBlock(TargetsCode target, Say say, string methodName)
-    {
-        var text = GetStringArg(methodName, say.Text, target);
-        Builder.BuildCall2(Current.Libs.LooksSay, [target.Name, text.Value]);
-        foreach (var @ref in text.toFree)
-            Builder.BuildFree(@ref);
-    }
-    private static void BuildThinkBlock(TargetsCode target, Think think, string methodName)
-    {
-        var text = GetStringArg(methodName, think.Text, target);
-        Builder.BuildCall2(Current.Libs.LooksThink, [target.Name, text.Value]);
-        foreach (var @ref in text.toFree)
-            Builder.BuildFree(@ref);
-    }
-
+    #region Motion
     private static void BuildGlideToBlock(TargetsCode target, GlideTo glide, string methodName)
     {
         if (!_glideArg.HasValue)
@@ -235,7 +225,6 @@ internal static class GenScript
         Builder.BuildCondBr(isDone, @continue, _pureExit.Value);
         Builder.PositionAtEnd(@continue);
     }
-    
     private static void BuildGotoBlock(TargetsCode target, MoveTo @goto, string methodName)
     {
         switch (@goto.Destination)
@@ -262,7 +251,26 @@ internal static class GenScript
         }
         throw Generator.NotImplemented(@goto);
     }
+    #endregion
+    
+    #region Looks
+    private static void BuildSayBlock(TargetsCode target, Say say, string methodName)
+    {
+        var text = GetStringArg(methodName, say.Text, target);
+        Builder.BuildCall2(Current.Libs.LooksSay, [target.Name, text.Value]);
+        foreach (var @ref in text.toFree)
+            Builder.BuildFree(@ref);
+    }
+    private static void BuildThinkBlock(TargetsCode target, Think think, string methodName)
+    {
+        var text = GetStringArg(methodName, think.Text, target);
+        Builder.BuildCall2(Current.Libs.LooksThink, [target.Name, text.Value]);
+        foreach (var @ref in text.toFree)
+            Builder.BuildFree(@ref);
+    }
+    #endregion
 
+    #region Control
     private static void BuildWaitBlock(TargetsCode target, Wait wait, string methodName)
     {
         if (_waitArg is null)
@@ -272,7 +280,7 @@ internal static class GenScript
         }
 
         var delay = GetFloatArg(methodName, wait.Delay, target);
-        var now = Builder.BuildCall2(Current.Libs.SensingTimer, [], "now");
+        var now = Builder.BuildCall2(Current.Libs.GlobalTimer, [], "now");
         var waitTo = Builder.BuildFAdd(now, delay.Value, "wait_to");
         foreach (var @ref in delay.toFree)
             Builder.BuildFree(@ref);
@@ -290,13 +298,20 @@ internal static class GenScript
         }
         Builder.PositionAtEnd(breakPoint.block);
         var @continue = _currentScript!.Function.AppendBasicBlock("control_wait_continue");
-        now = Builder.BuildCall2(Current.Libs.SensingTimer, [], "now");
+        now = Builder.BuildCall2(Current.Libs.GlobalTimer, [], "now");
         waitTo = Builder.BuildLoad2(Current.Context.DoubleType, GetFieldInStack(_waitArg.Value), "wait_to");
         var condition = Builder.BuildFCmp(LLVMRealPredicate.LLVMRealOGE, now, waitTo);
         Builder.BuildCondBr(condition, @continue, _pureExit.Value);
         Builder.PositionAtEnd(@continue);
     }
-    
+    #endregion
+
+    #region Sensing
+    private static void BuildResetTimerBlock(TargetsCode target, ResetTimer reset, string methodName)
+    {
+        Builder.BuildCall2(Current.Libs.SensingResetTimer, []);
+    }
+    #endregion
     private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildAddOperator(TargetsCode target, AddOperator add, string methodName)
     {
         var valA = GetFloatArg(methodName, add.A, target);

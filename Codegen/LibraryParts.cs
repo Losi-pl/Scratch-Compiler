@@ -17,6 +17,7 @@ internal class LibraryParts
         public readonly LLVMAttributeRef HotAttribute;
         public readonly LLVMMethod RunApp;
         public readonly LLVMMethod InitWindow;
+        public readonly LLVMMethod GlobalTimer;
 
     #endregion
 
@@ -75,7 +76,8 @@ internal class LibraryParts
 
     #region Sensing
 
-    public readonly LLVMMethod SensingTimer;
+        public readonly LLVMMethod SensingTimer;
+        public readonly LLVMMethod SensingResetTimer;
 
     #endregion
     
@@ -149,7 +151,9 @@ internal class LibraryParts
         }
 
         
+        GlobalTimer  = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "global_timer", []);
         SensingTimer  = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "sensing_timer", []);
+        SensingResetTimer  = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "sensing_reset_timer", []);
 
         HotAttribute = Generator.Current.Context.CreateEnumAttribute("hot", 0);
     }

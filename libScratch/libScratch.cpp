@@ -30,7 +30,6 @@ void looks_say(const char* target, const char* text)
 {
     std::cout << target << " is saying: " << text << '\n';
 }
-
 void looks_think(const char* target, const char* text)
 {
     std::cout << target << " is thinking: " << text << '\n';
@@ -41,7 +40,6 @@ void motion_goto_xy(Actor& actor, double x, double y)
     actor.set_x(x);
     actor.set_y(y);
 }
-
 void motion_goto_random(Actor& actor)
 {
     actor.set_x(random_int(-240, 240));
@@ -54,12 +52,12 @@ void motion_begin_glide_to(const Actor& actor, double* args, double desX, double
     args[1] = actor.y;
     args[2] = desX - actor.x;
     args[3] = desY - actor.y;
-    args[4] = sensing_timer();
+    args[4] = global_timer();
     args[5] = time;
 }
 bool motion_glide_to(Actor& actor, const double* args)
 {
-    auto now = sensing_timer();
+    auto now = global_timer();
     if(args[4] + args[5] <= now)
     {
         actor.set_x(args[0] + args[2]);
