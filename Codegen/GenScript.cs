@@ -29,7 +29,8 @@ internal static class GenScript
     [ThreadStatic] private static Dictionary<uint, LLVMBasicBlockRef>? _breakpoints;
     [ThreadStatic] private static uint _stackSize;
     [ThreadStatic] private static uint? _waitArg;
-    [ThreadStatic] private static LLVMBasicBlockRef? _waitExit;
+    [ThreadStatic] private static uint? _glideArg;
+    [ThreadStatic] private static LLVMBasicBlockRef? _pureExit;
 
     public static uint GenerateScript(TargetsCode target, CodeBlock script, LLVMMethod method)
     {
@@ -56,9 +57,10 @@ internal static class GenScript
             _conStrCount = 0;
             _breakpoints = [];
             _stackSize = 0u;
+            _pureExit = null;
 
             _waitArg = null;
-            _waitExit = null;
+            _glideArg = null;
         }
         void BuildEntrySwitch()
         {
@@ -107,10 +109,18 @@ internal static class GenScript
     {
         switch (function)
         {
-            case Say say: BuildSayBlock(target, say, methodName); break;
-            case Think think: BuildThinkBlock(target, think, methodName); break;
-            case MoveTo @goto: BuildGotoBlock(target, @goto, methodName); break;
-            case Wait wait: BuildWaitBlock(target, wait, methodName); break;
+            #region Motion
+                case MoveTo @goto: BuildGotoBlock(target, @goto, methodName); break;
+                case GlideTo glide: BuildGlideToBlock(target, glide, methodName); break;
+            #endregion
+            #region Looks
+                case Say say: BuildSayBlock(target, say, methodName); break;
+                case Think think: BuildThinkBlock(target, think, methodName); break;
+            #endregion
+            #region Control
+                case Wait wait: BuildWaitBlock(target, wait, methodName); break;
+            #endregion
+            
             default: throw Generator.NotImplemented(function);
         }
     }
@@ -181,6 +191,45 @@ internal static class GenScript
             Builder.BuildFree(@ref);
     }
 
+    private static void BuildGlideToBlock(TargetsCode target, GlideTo glide, string methodName)
+    {
+        if (!_glideArg.HasValue)
+        {
+            _glideArg = _stackSize;
+            _stackSize += sizeof(double) * 6;
+        }
+
+        var time = GetFloatArg(methodName, glide.Time, target);
+        switch (glide.Destination)
+        {
+            case { IsT1: true, AsT1: var dest }: 
+            {
+                var x = GetFloatArg(methodName, dest.Item1, target);
+                var y = GetFloatArg(methodName, dest.Item2, target);
+                
+                Builder.BuildCall2(Current.Libs.MotionBeginGlideTo, [_currentScript!.Function.GetParam(0), GetFieldInStack(_glideArg.Value), x.Value, y.Value, time.Value]);
+                
+                foreach (var @ref in x.toFree.Concat(y.toFree).Concat(time.toFree))
+                    Builder.BuildFree(@ref);
+            } break;
+            default: throw Generator.NotImplemented(glide);
+        }
+
+        var breakpoint = CreateScriptBreakPoint();
+        BuildBreakScriptRun(breakpoint.index);
+        if (!_pureExit.HasValue)
+        {
+            _pureExit = _currentScript.Function.AppendBasicBlock("pure_exit");
+            Builder.PositionAtEnd(_pureExit.Value);
+            Builder.BuildRetVoid();
+        }
+        Builder.PositionAtEnd(breakpoint.block);
+        var isDone = Builder.BuildCall2(Current.Libs.MotionGlideTo, [_currentScript.Function.GetParam(0), GetFieldInStack(_glideArg.Value)], "done");
+        var @continue = _currentScript.Function.AppendBasicBlock("glide_to_continue");
+        Builder.BuildCondBr(isDone, @continue, _pureExit.Value);
+        Builder.PositionAtEnd(@continue);
+    }
+    
     private static void BuildGotoBlock(TargetsCode target, MoveTo @goto, string methodName)
     {
         switch (@goto.Destination)
@@ -227,10 +276,10 @@ internal static class GenScript
         var breakPoint = CreateScriptBreakPoint();
         BuildBreakScriptRun(breakPoint.index);
         
-        if (!_waitExit.HasValue)
+        if (!_pureExit.HasValue)
         {
-            _waitExit = _currentScript!.Function.AppendBasicBlock("control_wait_exit");
-            Builder.PositionAtEnd(_waitExit.Value);
+            _pureExit = _currentScript!.Function.AppendBasicBlock("pure_exit");
+            Builder.PositionAtEnd(_pureExit.Value);
             Builder.BuildRetVoid();
         }
         Builder.PositionAtEnd(breakPoint.block);
@@ -238,7 +287,7 @@ internal static class GenScript
         now = Builder.BuildCall2(Current.Libs.SensingTimer, [], "now");
         waitTo = Builder.BuildLoad2(Current.Context.DoubleType, GetFieldInStack(_waitArg.Value), "wait_to");
         var condition = Builder.BuildFCmp(LLVMRealPredicate.LLVMRealOGE, now, waitTo);
-        Builder.BuildCondBr(condition, @continue, _waitExit.Value);
+        Builder.BuildCondBr(condition, @continue, _pureExit.Value);
         Builder.PositionAtEnd(@continue);
     }
     

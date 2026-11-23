@@ -55,6 +55,8 @@ internal class LibraryParts
         // ReSharper disable once InconsistentNaming
         public readonly LLVMMethod MotionMoveToXY;
         public readonly LLVMMethod MotionMoveToRandom;
+        public readonly LLVMMethod MotionBeginGlideTo;
+        public readonly LLVMMethod MotionGlideTo;
 
     #endregion
 
@@ -129,6 +131,11 @@ internal class LibraryParts
             ActorSetPosY = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_y@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
             MotionMoveToXY = LLVMMethod.CreateMethod(tools.Context.VoidType, "motion_goto_xy", [ActorStruct.Pointer, tools.Context.DoubleType, tools.Context.DoubleType]);
             MotionMoveToRandom = LLVMMethod.CreateMethod(tools.Context.VoidType, "motion_goto_random", [ActorStruct.Pointer]);
+            MotionBeginGlideTo = LLVMMethod.CreateMethod(tools.Context.VoidType, "motion_begin_glide_to", [ActorStruct.Pointer, PointerType, tools.Context.DoubleType, tools.Context.DoubleType, tools.Context.DoubleType]);
+            MotionGlideTo = LLVMMethod.CreateMethod(tools.Context.Int1Type, "motion_glide_to", [ActorStruct.Pointer, PointerType]);
+            LooksSay = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_say", [charPtr, charPtr]);
+            LooksThink = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_think", [charPtr, charPtr]);
+            OperatorJoin = LLVMMethod.CreateMethod(charPtr, "operator_join", [charPtr, charPtr]);
             
             CreateCostumeStorage = LLVMMethod.CreateMethod(PointerType, "create_costume_storage", [tools.Context.Int32Type]);
             LoadCostumeFromData = LLVMMethod.CreateMethod(tools.Context.VoidType, "load_costume_data", [PointerType, tools.Context.Int32Type, PointerType, tools.Context.Int64Type, charPtr]);
@@ -137,13 +144,10 @@ internal class LibraryParts
         
         {
             ScratchInit = LLVMMethod.CreateMethod(tools.Context.VoidType, "scratch_init", []);
-            OperatorJoin = LLVMMethod.CreateMethod(charPtr, "operator_join", [charPtr, charPtr]);
             CombineStrings3 = LLVMMethod.CreateMethod(charPtr, "combineStrings_3", [charPtr, charPtr, charPtr]);
             CastDoubleToString = LLVMMethod.CreateMethod(charPtr, "cast_double_to_string", [Generator.Current.Context.DoubleType]);
         }
 
-        LooksSay = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_say", [charPtr, charPtr]);
-        LooksThink = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_think", [charPtr, charPtr]);
         
         SensingTimer  = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "sensing_timer", []);
 

@@ -40,6 +40,9 @@ __declspec(dllexport) void __cdecl looks_think(const char* target, const char* t
 __declspec(dllexport) void __cdecl motion_goto_xy(Actor& actor, double x, double y);
 __declspec(dllexport) void __cdecl motion_goto_random(Actor& actor);
 
+__declspec(dllexport) void __cdecl motion_begin_glide_to(const Actor& actor, double* args, double desX, double desY, double time);
+__declspec(dllexport) bool __cdecl motion_glide_to(Actor& actor, const double* args);
+
 #ifdef __cplusplus
 }
 #endif

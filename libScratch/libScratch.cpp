@@ -9,12 +9,21 @@
 #include <ostream>
 #include <random>
 
+#include "Window.h"
+
 extern "C" {
     Events* stage_events = nullptr;
     void* stage_scripts = nullptr;
     unsigned int stage_script_count = 0;
     Actor::CostumesStorage* stage_backdrops = nullptr;
     unsigned int stage_backdrop_index = 0;
+}
+namespace
+{
+    std::list<void*> actors;  // NOLINT(bugprone-throwing-static-initialization, misc-use-anonymous-namespace)
+    std::mt19937_64 random_engine{std::random_device{}()};  // NOLINT(bugprone-throwing-static-initialization)
+    std::uniform_real_distribution dist_double;
+    std::uniform_int_distribution dist_int;
 }
 
 void looks_say(const char* target, const char* text)
@@ -27,29 +36,52 @@ void looks_think(const char* target, const char* text)
     std::cout << target << " is thinking: " << text << '\n';
 }
 
-void __cdecl motion_goto_xy(Actor& actor, double x, double y)
+void motion_goto_xy(Actor& actor, double x, double y)
 {
     actor.set_x(x);
     actor.set_y(y);
 }
 
-void __cdecl motion_goto_random(Actor& actor)
+void motion_goto_random(Actor& actor)
 {
     actor.set_x(random_int(-240, 240));
     actor.set_y(random_int(-180, 180));
 }
 
-static std::list<void*> actors;  // NOLINT(bugprone-throwing-static-initialization, misc-use-anonymous-namespace)
-
-double random_double(double min, double max) {
-    thread_local std::mt19937_64 random_engine{std::random_device{}()};
-    std::uniform_real_distribution dist(min, max);
-    return dist(random_engine);
+void motion_begin_glide_to(const Actor& actor, double* args, double desX, double desY, double time)
+{
+    args[0] = actor.x;
+    args[1] = actor.y;
+    args[2] = desX - actor.x;
+    args[3] = desY - actor.y;
+    args[4] = sensing_timer();
+    args[5] = time;
 }
-double random_int(int min, int max) {
-    thread_local std::mt19937_64 random_engine{std::random_device{}()};
-    std::uniform_int_distribution dist(min, max);
-    return dist(random_engine);
+bool motion_glide_to(Actor& actor, const double* args)
+{
+    auto now = sensing_timer();
+    if(args[4] + args[5] <= now)
+    {
+        actor.set_x(args[0] + args[2]);
+        actor.set_y(args[1] + args[3]);
+        return true;
+    }
+    else
+    {
+        auto time = (now - args[4]) / args[5];
+        actor.set_x(args[0] + (args[2] * time));
+        actor.set_y(args[1] + (args[3] * time));
+        return false;
+    }
+}
+
+double random_double(const double min, const double max) {
+    dist_double.param(std::uniform_real_distribution<>::param_type(min, max));
+    return dist_double(random_engine);
+}
+double random_int(const int min, const int max) {
+    dist_int.param(std::uniform_int_distribution<>::param_type(min, max));
+    return dist_int(random_engine);
 }
 std::list<void*>* get_actors() { return &actors; }
 void scratch_init() { actors = std::list<void*>(); }
@@ -159,7 +191,7 @@ void* get_iteration_next(std::list<void*>::iterator& iterator, std::list<void*>&
     
     return value;
 }
-void run_actor_script(Script* scripts, unsigned int index)
+void run_actor_script(Script* scripts, unsigned int index) 
 {
     auto script = &scripts[index];
     
