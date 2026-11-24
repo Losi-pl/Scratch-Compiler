@@ -154,7 +154,7 @@ void start_app()
             auto& actor = *static_cast<Actor*>(ptr);
             reinterpret_cast<void(__cdecl*)(Actor*)>(actor.events->Update)(&actor);
             
-            auto& costume = *reinterpret_cast<Actor::Costume*>(static_cast<uint8_t*>(actor.costumes) + sizeof(Actor::CostumesStorage) + (sizeof(Actor::Costume) * actor.costume_index));
+            auto& costume = (*actor.costumes)[actor.costume_index];
             costume.sprite.setPosition(calculate_position(actor));
             
             auto scale = static_cast<float>((actor.scale / 100.0) * costume.imageScale);

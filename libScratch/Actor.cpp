@@ -26,7 +26,7 @@ void Actor::set_y(const double y)  // NOLINT(clang-diagnostic-shadow)
         this->y = y;
 }
 
-void construct_actor(Actor* actor, char* name, Events* script_events, const double x, const double y, const unsigned int script_count, void* costumes, unsigned int costume_index, double scale)
+void construct_actor(Actor* actor, char* name, Events* script_events, const double x, const double y, const unsigned int script_count, Actor::CostumesStorage* costumes, unsigned int costume_index, double scale)
 {
     auto& a = *::new (actor) Actor();
     a.name = name;
@@ -40,6 +40,7 @@ void construct_actor(Actor* actor, char* name, Events* script_events, const doub
     a.scale = scale;
 }
 
+Actor::Costume& Actor::CostumesStorage::operator[](unsigned int index) { return *reinterpret_cast<Costume*>(reinterpret_cast<uint8_t*>(this) + sizeof(CostumesStorage) + (sizeof(Costume) * index)); }
 Actor::CostumesStorage* create_costume_storage(const unsigned int count)
 {
     auto size = sizeof(Actor::CostumesStorage) + sizeof(Actor::Costume) * count;
@@ -50,13 +51,13 @@ Actor::CostumesStorage* create_costume_storage(const unsigned int count)
 }
 void load_costume_data(Actor::CostumesStorage* storage, unsigned int index, const void* data, size_t size, const char* name)
 {
-    auto& costume = *reinterpret_cast<Actor::Costume*>(reinterpret_cast<uint8_t*>(storage) + sizeof(Actor::CostumesStorage) + (sizeof(Actor::Costume) * index));
+    auto& costume = (*storage)[index];
     ::new (&costume) Actor::Costume(data, size, name, 1.f);
     costume.sprite.setOrigin({static_cast<float>(costume.texture.getSize().x) / 2.f, static_cast<float>(costume.texture.getSize().y) / 2.f});
 }
 void load_costume_svg(Actor::CostumesStorage* storage, unsigned int index, const char* svg, const char* name)
 {
-    auto& costume = *reinterpret_cast<Actor::Costume*>(reinterpret_cast<uint8_t*>(storage) + sizeof(Actor::CostumesStorage) + (sizeof(Actor::Costume) * index));
+    auto& costume = (*storage)[index];
     
     try
     {
