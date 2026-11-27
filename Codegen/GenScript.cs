@@ -234,6 +234,16 @@ internal static class GenScript
                 foreach (var @ref in time.toFree)
                     Builder.BuildFree(@ref);
             } break;
+            case { IsT2: true, AsT2: var actor }:
+            {
+                var aPtr = Current.Targets[actor].InstanceData.AsT0;
+                var x = Builder.BuildLoad2(Current.Context.DoubleType, Builder.BuildStructGEP2(Current.Libs.ActorStruct, aPtr, 1), "x");
+                var y = Builder.BuildLoad2(Current.Context.DoubleType, Builder.BuildStructGEP2(Current.Libs.ActorStruct, aPtr, 2), "y");
+                
+                Builder.BuildCall2(Current.Libs.MotionBeginGlideTo, [_currentScript!.Function.GetParam(0), GetFieldInStack(_glideArg.Value), x, y, time.Value]);
+                foreach (var @ref in time.toFree)
+                    Builder.BuildFree(@ref);
+            } break;
             default: throw Generator.NotImplemented(glide);
         }
 
