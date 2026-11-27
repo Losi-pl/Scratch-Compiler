@@ -9,7 +9,6 @@ partial class Generator
     internal static ImmutableArray<EmbeddedFile> EmbedCostumes(Target target)
     {
         List<EmbeddedFile> costumes = [];
-        var nullptr = LLVMValueRef.CreateConstPointerNull(Current.Libs.PointerType);
         foreach (var costume in target.Costumes)
         {
             if (costume.FileFormat == CostumeFormat.SVG)
@@ -30,7 +29,7 @@ partial class Generator
                     LLVM.SetGlobalConstant(body, 1 /* true */);                   // constant
                     LLVM.SetAlignment(body, 1);                                      // align 1
                     
-                    costumes.Add(new(body, nullptr));
+                    costumes.Add(new(body, Current.Libs.Nullptr));
                 }
             }
             else 

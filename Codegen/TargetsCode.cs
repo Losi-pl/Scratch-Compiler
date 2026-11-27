@@ -31,7 +31,7 @@ internal class TargetsCode
     {
         Target = target;
         Module = Tools.Context.CreateModuleWithName(target is Actor ? $"{Tools.Module.SourceFileName}::Actor::{target.Name}" : $"{Tools.Module.SourceFileName}::Stage");
-        Name = target is Actor ? Module.BuildGlobalString(target.Name, $"{target.Name}::Name") : LLVMValueRef.CreateConstPointerNull(Tools.Libs.PointerType);
+        Name = target is Actor ? Module.BuildGlobalString(target.Name, $"{target.Name}::Name") : Tools.Libs.Nullptr;
         ConstructTarget = Module.CreateMethod(Tools.Context.VoidType, target is Actor ? $"Construct::Actor::{target.Name}" : "Construct::Stage" , []);
         ScriptUpdate = Module.CreateMethod(Tools.Context.VoidType, $"{target.Name}::Update", target is Actor ? [Tools.Libs.PointerType] : []);
         RunOnStart = Module.CreateMethod(Tools.Context.VoidType, $"{target.Name}::Run::OnStart", target is Actor ? [Tools.Libs.PointerType] : []);
@@ -233,7 +233,7 @@ internal class TargetsCode
             else
             {
                 scriptsPtr = Tools.Builder.BuildLoad2(Tools.Libs.ScriptHolder.Pointer, InstanceData.AsT1.Scripts.Body, "Scripts");
-                actorPtr = LLVMValueRef.CreateConstPointerNull(Tools.Libs.PointerType);
+                actorPtr = Tools.Libs.Nullptr;
             }
             
             for (uint i = 0; i < Scripts.Length; i++) {                                                                         // >> ::Test
