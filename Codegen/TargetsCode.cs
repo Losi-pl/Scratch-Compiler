@@ -124,12 +124,13 @@ internal class TargetsCode
             var defCostume = LLVMValueRef.CreateConst(actor.DefaultCostume);                                     // Const: Default Costume index
             var costumeCount = LLVMValueRef.CreateConst((uint)actor.Costumes.Length);                            // Const: Costume count
             var actorScale = LLVMValueRef.CreateConst(actor.DefaultSize);                                        // Const: Actor size
+            var actorRot = LLVMValueRef.CreateConst(actor.DefaultDirection);                                     // Const: Actor rotation
 
             var inst = InstanceData.AsT0;
             var costumes = builder.BuildCall2(Tools.Libs.CreateCostumeStorage, [costumeCount],       // Construct costume storage
                 "costume_storage");                                                                         // ^^^
             builder.BuildCall2(Tools.Libs.ConstructActor, [inst, Name,                                           // Construct actor's body
-                Events.Struct, posX, posY, scriptCount, costumes, defCostume, actorScale]);                      // ^^^
+                Events.Struct, posX, posY, scriptCount, costumes, defCostume, actorScale, actorRot]);            // ^^^
             builder.BuildCall2(Tools.Libs.RegisterActor, [inst]);                                                // Register the actor
             if (Scripts.Length > 0)
             {

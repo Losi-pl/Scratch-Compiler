@@ -15,7 +15,6 @@ void Actor::set_x(const double x)  // NOLINT(clang-diagnostic-shadow)
     else
         this->x = x;
 }
-    
 void Actor::set_y(const double y)  // NOLINT(clang-diagnostic-shadow)
 {
     if (y < -180)
@@ -26,18 +25,26 @@ void Actor::set_y(const double y)  // NOLINT(clang-diagnostic-shadow)
         this->y = y;
 }
 
-void construct_actor(Actor* actor, char* name, Events* script_events, const double x, const double y, const unsigned int script_count, Actor::CostumesStorage* costumes, unsigned int costume_index, double scale)
+void __cdecl Actor::set_direction(double dir)
 {
-    auto& a = *::new (actor) Actor();
-    a.name = name;
-    a.x = x;
-    a.y = y;
-    a.scripts = static_cast<Script*>(_aligned_malloc(sizeof(Script) * script_count, alignof(Script)));
-    a.script_count = script_count;
-    a.events = script_events;
-    a.costumes = costumes;
-    a.costume_index = costume_index;
-    a.scale = scale;
+    // For whatever reason the range of direction in Scratch is <-179;181)
+    this->direction = std::fmod(dir + 179, 380) - 179;
+    if (this->direction < -179)
+        this->direction += 360;
+}
+
+void construct_actor(Actor& actor, char* name, Events* script_events, const double x, const double y, const unsigned int script_count, Actor::CostumesStorage* costumes, unsigned int costume_index, double scale, double direction)
+{
+    actor.name = name;
+    actor.x = x;
+    actor.y = y;
+    actor.scripts = static_cast<Script*>(_aligned_malloc(sizeof(Script) * script_count, alignof(Script)));
+    actor.script_count = script_count;
+    actor.events = script_events;
+    actor.costumes = costumes;
+    actor.costume_index = costume_index;
+    actor.scale = scale;
+    actor.direction = direction;
 }
 
 Actor::Costume& Actor::CostumesStorage::operator[](unsigned int index) { return *reinterpret_cast<Costume*>(reinterpret_cast<uint8_t*>(this) + sizeof(CostumesStorage) + (sizeof(Costume) * index)); }

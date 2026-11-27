@@ -49,16 +49,19 @@ internal class LibraryParts
         
     #endregion
     
-    #region Motion
-
-        public readonly LLVMMethod ActorSetPosX;
-        public readonly LLVMMethod ActorSetPosY;
-        // ReSharper disable once InconsistentNaming
+    #region Motion 
+    // ReSharper disable InconsistentNaming
+    
+        public readonly LLVMMethod MotionSetX;
+        public readonly LLVMMethod MotionSetY;
+        public readonly LLVMMethod MotionPointInDirection;
+        
         public readonly LLVMMethod MotionMoveToXY;
         public readonly LLVMMethod MotionMoveToRandom;
         public readonly LLVMMethod MotionBeginGlideTo;
         public readonly LLVMMethod MotionGlideTo;
-
+    
+    // ReSharper restore InconsistentNaming
     #endregion
 
     #region Looks
@@ -115,22 +118,24 @@ internal class LibraryParts
                 Generator.Current.Context.Int32Type,    // #6 uint current_costume
                 Generator.Current.Context.DoubleType,   // #7 double scale
                 PointerType,                            // #8 Costumes[] costumes
+                Generator.Current.Context.DoubleType,   // #9 double direction
             }, false, "Scratch::Actor");
             
             GetActorIterator = LLVMMethod.CreateMethod(tools.Context.VoidType, "?begin_actor_iteration@@YA?AV?$_List_iterator@V?$_List_val@U?$_List_simple_types@PEAX@std@@@std@@@std@@XZ", [ListHandler.Pointer]);
             IterateNext = LLVMMethod.CreateMethod(ActorStruct.Pointer, "get_iteration_next", [ListHandler.Pointer, PointerType, Generator.Current.Context.Int1Type]);
+            ConstructScript = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Script@@QEAA@I@Z", [ScriptHolder.Pointer, Generator.Current.Context.Int32Type]);
             RunScript = LLVMMethod.CreateMethod(tools.Context.VoidType, "run_actor_script", [ScriptHolder.Pointer, Generator.Current.Context.Int32Type]);
             RegisterActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "register_new_actor", [ActorStruct.Pointer]);
+            GlobalTimer  = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "global_timer", []);
             GetActorCount = LLVMMethod.CreateMethod(tools.Context.Int32Type, "actor_count", []);
             GetActors = LLVMMethod.CreateMethod(PointerType, "get_actors", []);
-            
-            ConstructScript = LLVMMethod.CreateMethod(tools.Context.VoidType, "??0Script@@QEAA@I@Z", [ScriptHolder.Pointer, Generator.Current.Context.Int32Type]);
-            
-            ConstructActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "construct_actor", [ActorStruct.Pointer, charPtr, 
+            ConstructActor = LLVMMethod.CreateMethod(tools.Context.VoidType, "construct_actor", ActorStruct.Pointer, charPtr, 
                 ScriptEvents.Pointer, tools.Context.DoubleType, tools.Context.DoubleType, tools.Context.Int32Type, 
-                PointerType, tools.Context.Int32Type, tools.Context.DoubleType]);
-            ActorSetPosX = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_x@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
-            ActorSetPosY = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_y@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
+                PointerType, tools.Context.Int32Type, tools.Context.DoubleType, tools.Context.DoubleType);
+            
+            MotionSetX = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_x@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
+            MotionSetY = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_y@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
+            MotionPointInDirection = LLVMMethod.CreateMethod(tools.Context.VoidType, "?set_direction@Actor@@QEAAXN@Z", [ActorStruct.Pointer, tools.Context.DoubleType]);
             MotionMoveToXY = LLVMMethod.CreateMethod(tools.Context.VoidType, "motion_goto_xy", [ActorStruct.Pointer, tools.Context.DoubleType, tools.Context.DoubleType]);
             MotionMoveToRandom = LLVMMethod.CreateMethod(tools.Context.VoidType, "motion_goto_random", [ActorStruct.Pointer]);
             MotionBeginGlideTo = LLVMMethod.CreateMethod(tools.Context.VoidType, "motion_begin_glide_to", [ActorStruct.Pointer, PointerType, tools.Context.DoubleType, tools.Context.DoubleType, tools.Context.DoubleType]);
@@ -138,6 +143,8 @@ internal class LibraryParts
             LooksSay = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_say", [charPtr, charPtr]);
             LooksThink = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_think", [charPtr, charPtr]);
             OperatorJoin = LLVMMethod.CreateMethod(charPtr, "operator_join", [charPtr, charPtr]);
+            SensingTimer  = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "sensing_timer", []);
+            SensingResetTimer  = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "sensing_reset_timer", []);
             
             CreateCostumeStorage = LLVMMethod.CreateMethod(PointerType, "create_costume_storage", [tools.Context.Int32Type]);
             LoadCostumeFromData = LLVMMethod.CreateMethod(tools.Context.VoidType, "load_costume_data", [PointerType, tools.Context.Int32Type, PointerType, tools.Context.Int64Type, charPtr]);
@@ -149,11 +156,6 @@ internal class LibraryParts
             CombineStrings3 = LLVMMethod.CreateMethod(charPtr, "combineStrings_3", [charPtr, charPtr, charPtr]);
             CastDoubleToString = LLVMMethod.CreateMethod(charPtr, "cast_double_to_string", [Generator.Current.Context.DoubleType]);
         }
-
-        
-        GlobalTimer  = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "global_timer", []);
-        SensingTimer  = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "sensing_timer", []);
-        SensingResetTimer  = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "sensing_reset_timer", []);
 
         HotAttribute = Generator.Current.Context.CreateEnumAttribute("hot", 0);
     }

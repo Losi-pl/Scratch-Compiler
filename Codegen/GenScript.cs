@@ -3,6 +3,7 @@ using LLVMSharp.Interop;
 using ScratchCompiler.Codegen.ValueTypes;
 using ScratchCompiler.Parser;
 using ScratchCompiler.Parser.Functions.Control;
+using ScratchCompiler.Parser.Functions.Data;
 using ScratchCompiler.Parser.Functions.Looks;
 using ScratchCompiler.Parser.Functions.Motion;
 using ScratchCompiler.Parser.Functions.Sensing;
@@ -113,6 +114,7 @@ internal static class GenScript
             #region Motion
                 case MoveTo @goto: BuildGotoBlock(target, @goto, methodName); return;
                 case GlideTo glide: BuildGlideToBlock(target, glide, methodName); return;
+                case Rotate rotate: BuildRotateBlock(target, rotate, methodName); return;
             #endregion
             #region Looks
                 case Say say: BuildSayBlock(target, say, methodName); return;
@@ -124,9 +126,13 @@ internal static class GenScript
             #region Sensing
                 case ResetTimer reset: BuildResetTimerBlock(target, reset, methodName); return;
             #endregion
-            
-            default: throw Generator.NotImplemented(function);
+            #region Variables
+            case SetVariable { IsSystemVar: true, AsSystem: var sys, Value: var val }: switch(sys) {
+                case SetVariable.SysVariables.Rotation: BuildPointInDirection(target, val, methodName); return;
+            } break;
+            #endregion
         }
+        throw Generator.NotImplemented(function);
     }
 
     private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetStringArg(string method, Argument arg, TargetsCode target)
@@ -141,12 +147,12 @@ internal static class GenScript
         
         throw Generator.NotImplemented(arg);
     }
-    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetFloatArg(string method, FloatArgument arg, TargetsCode target)
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) GetFloatArg(string method, Argument arg, TargetsCode target)
     {
         switch (arg)
         {
             case ConstDouble floatArg: return (LLVMValueRef.CreateConst(floatArg.Const), NoDispose());
-            case ConstInt intArg: return (LLVMValueRef.CreateConst((float)intArg.Const), NoDispose());
+            case ConstInt intArg: return (LLVMValueRef.CreateConst((double)intArg.Const), NoDispose());
             case AddOperator add: return BuildAddOperator(target, add, method);
             case SubtractOperator sub: return BuildSubtractOperator(target, sub, method);
             case DivideOperator div: return BuildDivideOperator(target, div, method);
@@ -179,6 +185,12 @@ internal static class GenScript
                     var field = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript.Function.GetParam(0), 7, "field: size");
                     var size = Builder.BuildLoad2(Current.Context.DoubleType, field, "size");
                     return (size, NoDispose());
+                }
+                case GetDouble.SystemSources.Rotation:
+                {
+                    var field = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript.Function.GetParam(0), 9, "field: direction");
+                    var direction = Builder.BuildLoad2(Current.Context.DoubleType, field, "direction");
+                    return (direction, NoDispose());
                 }
                 case GetDouble.SystemSources.Timer:
                     return (Builder.BuildCall2(Current.Libs.SensingTimer, [], "timer"), NoDispose());
@@ -251,6 +263,17 @@ internal static class GenScript
         }
         throw Generator.NotImplemented(@goto);
     }
+    private static void BuildRotateBlock(TargetsCode target, Rotate rotate, string methodName)
+    {
+        var deg = GetFloatArg(methodName, rotate.Degrees, target);
+        var dirField = Builder.BuildStructGEP2(Current.Libs.ActorStruct, _currentScript!.Function.GetParam(0), 9, "field: direction");
+        var direction = Builder.BuildLoad2(Current.Context.DoubleType, dirField, "direction");
+        var altered = rotate.Direction == Rotate.TurnDirection.Right ? Builder.BuildFAdd(direction, deg.Value) : Builder.BuildFSub(direction, deg.Value);
+        altered.Name = rotate.Direction == Rotate.TurnDirection.Right ? "right_ope" : "left_ope";
+        foreach (var @ref in deg.toFree)
+            Builder.BuildFree(@ref);
+        Builder.BuildCall2(Current.Libs.MotionPointInDirection, [_currentScript.Function.GetParam(0), altered]);
+    }
     #endregion
     
     #region Looks
@@ -307,9 +330,19 @@ internal static class GenScript
     #endregion
 
     #region Sensing
-    private static void BuildResetTimerBlock(TargetsCode target, ResetTimer reset, string methodName)
+    private static void BuildResetTimerBlock(TargetsCode _1, ResetTimer _2, string _3)
     {
         Builder.BuildCall2(Current.Libs.SensingResetTimer, []);
+    }
+    #endregion
+
+    #region Variables
+    private static void BuildPointInDirection(TargetsCode target, Argument value, string methodName)
+    {
+        var val = GetFloatArg(methodName, value, target);
+        Builder.BuildCall2(Current.Libs.MotionPointInDirection, [_currentScript!.Function.GetParam(0), val.Value]);
+        foreach (var @ref in val.toFree)
+            Builder.BuildFree(@ref);
     }
     #endregion
     private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) BuildAddOperator(TargetsCode target, AddOperator add, string methodName)
@@ -377,7 +410,7 @@ internal static class GenScript
         return (rez, [rez]);
     }
     
-    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) CastIntToString(string method, IntArgument arg, TargetsCode target) 
+    private static (LLVMValueRef Value, IEnumerable<LLVMValueRef> toFree) CastIntToString(string _1, IntArgument _2, TargetsCode _3) 
     {
         throw new NotImplementedException("Not implemented");
     }

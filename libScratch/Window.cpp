@@ -159,6 +159,7 @@ void start_app()
             
             auto scale = static_cast<float>((actor.scale / 100.0) * costume.imageScale);
             costume.sprite.setScale({scale, scale});
+            costume.sprite.setRotation(degrees(static_cast<float>(actor.direction - 90.0)));
             
             window.draw(costume.sprite);
             shape.setPosition(calculate_position(actor));

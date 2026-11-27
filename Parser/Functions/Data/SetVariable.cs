@@ -41,6 +41,14 @@ public class SetVariable : Function
     
     private readonly OneOf<SysVariables, Variable> _destination;
     private readonly Argument _value;
+
+    public bool IsSystemVar => _destination.IsT0;
+    public bool IsCustom => _destination.IsT1;
+
+    public SysVariables AsSystem => _destination.AsT0;
+    public Variable AsVariable => _destination.AsT1;
+    
+    public Argument Value => _value;
     
     private SetVariable(Variable destination, Argument value) => (_destination, _value) = (destination, value);
     private SetVariable(SysVariables destination, Argument value) => (_destination, _value) = (destination, value);
