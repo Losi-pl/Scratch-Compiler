@@ -129,6 +129,8 @@ internal static class GenScript
             #region Variables
             case SetVariable { IsSystemVar: true, AsSystem: var sys, Value: var val }: switch(sys) {
                 case SetVariable.SysVariables.Rotation: BuildPointInDirection(target, val, methodName); return;
+                case SetVariable.SysVariables.XPosition: case SetVariable.SysVariables.YPosition: 
+                    BuildSetXorY(target, val, isX: sys == SetVariable.SysVariables.XPosition, methodName); return;
             } break;
             #endregion
         }
@@ -341,6 +343,13 @@ internal static class GenScript
     {
         var val = GetFloatArg(methodName, value, target);
         Builder.BuildCall2(Current.Libs.MotionPointInDirection, [_currentScript!.Function.GetParam(0), val.Value]);
+        foreach (var @ref in val.toFree)
+            Builder.BuildFree(@ref);
+    }
+    private static void BuildSetXorY(TargetsCode target, Argument value, bool isX, string methodName)
+    {
+        var val = GetFloatArg(methodName, value, target);
+        Builder.BuildCall2(isX ? Current.Libs.MotionSetX : Current.Libs.MotionSetY, [_currentScript!.Function.GetParam(0), val.Value]);
         foreach (var @ref in val.toFree)
             Builder.BuildFree(@ref);
     }
