@@ -277,13 +277,23 @@ internal static class GenScript
                 foreach (var @ref in x.toFree.Concat(y.toFree))
                     Builder.BuildFree(@ref);  
             } return;
-            case { IsT0: true, AsT0: var dest }:
+            case { IsT0: true, AsT0: MoveTo.RelativePosition.Random }:
             {
-                switch (dest)
-                {
-                    case MoveTo.RelativePosition.Random: Builder.BuildCall2(Current.Libs.MotionMoveToRandom, [_currentScript!.Function.GetParam(0)]); return;
-                }
-            } break;
+                var rX = Builder.BuildCall2(Current.Libs.RandomInt, [LLVMValueRef.CreateConst(-240), LLVMValueRef.CreateConst(240)], "r1");
+                var x = Builder.BuildSIToFP(rX, Current.Context.DoubleType);
+                var rY = Builder.BuildCall2(Current.Libs.RandomInt, [LLVMValueRef.CreateConst(-180), LLVMValueRef.CreateConst(180)], "r1");
+                var y = Builder.BuildSIToFP(rY, Current.Context.DoubleType);
+                
+                Builder.BuildCall2(Current.Libs.MotionMoveToXY, [_currentScript!.Function.GetParam(0), x, y]);
+            } return;
+            case { IsT2: true, AsT2: var actor }:
+            {
+                var aPtr = Current.Targets[actor].InstanceData.AsT0;
+                var x = Builder.BuildLoad2(Current.Context.DoubleType, Builder.BuildStructGEP2(Current.Libs.ActorStruct, aPtr, 1), "x");
+                var y = Builder.BuildLoad2(Current.Context.DoubleType, Builder.BuildStructGEP2(Current.Libs.ActorStruct, aPtr, 2), "y");
+
+                Builder.BuildCall2(Current.Libs.MotionMoveToXY, [_currentScript!.Function.GetParam(0), x, y]);
+            } return;
         }
         throw Generator.NotImplemented(@goto);
     }

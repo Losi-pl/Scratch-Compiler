@@ -12,11 +12,12 @@ public class MoveTo : Function
     public const string ScratchSelectionCode = "motion_goto_menu";
     
 
-    public readonly OneOf<RelativePosition, (FloatArgument, FloatArgument)> Destination;
+    public readonly OneOf<RelativePosition, (FloatArgument, FloatArgument), Actor> Destination;
     
     public MoveTo(RelativePosition target) => Destination = target;
     public MoveTo((FloatArgument x, FloatArgument y) target) => Destination = target;
     public MoveTo(FloatArgument x, FloatArgument y) => Destination = (x, y);
+    public MoveTo(Actor actor) => Destination = actor;
 
     public override string ToString() => $"Move to { Destination switch {
         {IsT0: true, AsT0: var t0} => $"[{t0} Position]",
@@ -29,13 +30,18 @@ public class MoveTo : Function
     [FunctionParser(ScratchRelativeCode)] // ReSharper disable once UnusedMember.Local
     private static MoveTo ParseRelative(JsonObject json, JsonObject list, Target _) {
         var @ref = json.GetInputReference("TO", list);
-        var mode = @ref.GetField("TO") switch
+        var target = @ref.GetField("TO");
+        RelativePosition? mode = target switch
         {
             "_mouse_" => RelativePosition.Mouse,
             "_random_" => RelativePosition.Random,
-            _ => throw new NotSupportedException()
+            _ => null
         };
-        return new MoveTo(mode);
+        if(mode.HasValue)
+            return new MoveTo(mode.Value);
+        var actor = SyntaxTree.Current.project.Actors.FirstOrDefault(a => a.Name == target) ??
+                    throw new NotSupportedException($"Actor {target} not found");
+        return new(actor);
     }
     
     [FunctionParser(ScratchAbsoluteCode)] // ReSharper disable once UnusedMember.Local
