@@ -46,7 +46,7 @@ internal static class GenScript
         foreach (var operation in script.Methods)
             BuildFunctionBlock(target, operation, method.Function.Name);
 
-        var exitBlock = method.Function.AppendBasicBlock("exit");
+        var exitBlock = method.Function.AppendBasicBlock("stop_script");
         Builder.BuildBr(exitBlock);
         Current.Builder.PositionAtEnd(exitBlock);
         BuildBreakScriptRun(0);
@@ -80,7 +80,7 @@ internal static class GenScript
     private static (LLVMBasicBlockRef block, uint index) CreateScriptBreakPoint()
     {
         var key = FindFreeBreakpoint();
-        var block = _currentScript!.Function.AppendBasicBlock("Script #" + key);
+        var block = _currentScript!.Function.AppendBasicBlock("Breakpoint #" + key);
         _breakpoints!.Add(key, block);
         return (block, key);
         uint FindFreeBreakpoint()
