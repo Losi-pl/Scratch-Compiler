@@ -18,6 +18,8 @@ internal class LibraryParts
         public readonly LLVMMethod RunApp;
         public readonly LLVMMethod InitWindow;
         public readonly LLVMMethod GlobalTimer;
+        public readonly LLVMMethod RandomDouble;
+        public readonly LLVMMethod RandomInt;
 
     #endregion
 
@@ -95,6 +97,8 @@ internal class LibraryParts
         ExitApp = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "_exit", [Generator.Current.Context.Int32Type]);
         RunApp = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "start_app", []);
         InitWindow = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "create_window", [PointerType]);
+        RandomDouble = LLVMMethod.CreateMethod(Generator.Current.Context.DoubleType, "random_double", [Generator.Current.Context.DoubleType, Generator.Current.Context.DoubleType]);
+        RandomInt = LLVMMethod.CreateMethod(Generator.Current.Context.Int32Type, "random_int", [Generator.Current.Context.Int32Type, Generator.Current.Context.Int32Type]);
         
         var charPtr = LLVMTypeRef.CreatePointer(tools.Context.Int8Type, 0);
         

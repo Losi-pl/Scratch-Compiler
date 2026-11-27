@@ -223,6 +223,17 @@ internal static class GenScript
                 foreach (var @ref in x.toFree.Concat(y.toFree).Concat(time.toFree))
                     Builder.BuildFree(@ref);
             } break;
+            case { IsT0: true, AsT0: MoveTo.RelativePosition.Random }:
+            {
+                var rX = Builder.BuildCall2(Current.Libs.RandomInt, [LLVMValueRef.CreateConst(-240), LLVMValueRef.CreateConst(240)], "r1");
+                var x = Builder.BuildSIToFP(rX, Current.Context.DoubleType);
+                var rY = Builder.BuildCall2(Current.Libs.RandomInt, [LLVMValueRef.CreateConst(-180), LLVMValueRef.CreateConst(180)], "r1");
+                var y = Builder.BuildSIToFP(rY, Current.Context.DoubleType);
+                
+                Builder.BuildCall2(Current.Libs.MotionBeginGlideTo, [_currentScript!.Function.GetParam(0), GetFieldInStack(_glideArg.Value), x, y, time.Value]);
+                foreach (var @ref in time.toFree)
+                    Builder.BuildFree(@ref);
+            } break;
             default: throw Generator.NotImplemented(glide);
         }
 

@@ -28,13 +28,9 @@ namespace
 }
 
 void looks_say(const char* target, const char* text)
-{
-    std::cout << target << " is saying: " << text << '\n';
-}
+{ std::cout << target << " is saying: " << text << '\n'; }
 void looks_think(const char* target, const char* text)
-{
-    std::cout << target << " is thinking: " << text << '\n';
-}
+{ std::cout << target << " is thinking: " << text << '\n'; }
 
 void motion_goto_xy(Actor& actor, double x, double y)
 {
