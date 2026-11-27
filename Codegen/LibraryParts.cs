@@ -56,6 +56,7 @@ internal class LibraryParts
         public readonly LLVMMethod MotionSetY;
         public readonly LLVMMethod MotionPointInDirection;
         
+        public readonly LLVMMethod MotionMoveSteps;
         public readonly LLVMMethod MotionMoveToXY;
         public readonly LLVMMethod MotionMoveToRandom;
         public readonly LLVMMethod MotionBeginGlideTo;
@@ -140,6 +141,7 @@ internal class LibraryParts
             MotionMoveToRandom = LLVMMethod.CreateMethod(tools.Context.VoidType, "motion_goto_random", [ActorStruct.Pointer]);
             MotionBeginGlideTo = LLVMMethod.CreateMethod(tools.Context.VoidType, "motion_begin_glide_to", [ActorStruct.Pointer, PointerType, tools.Context.DoubleType, tools.Context.DoubleType, tools.Context.DoubleType]);
             MotionGlideTo = LLVMMethod.CreateMethod(tools.Context.Int1Type, "motion_glide_to", [ActorStruct.Pointer, PointerType]);
+            MotionMoveSteps = LLVMMethod.CreateMethod(tools.Context.VoidType, "motion_move_steps", [ActorStruct.Pointer, tools.Context.DoubleType]);
             LooksSay = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_say", [charPtr, charPtr]);
             LooksThink = LLVMMethod.CreateMethod(Generator.Current.Context.VoidType, "looks_think", [charPtr, charPtr]);
             OperatorJoin = LLVMMethod.CreateMethod(charPtr, "operator_join", [charPtr, charPtr]);

@@ -115,6 +115,7 @@ internal static class GenScript
                 case MoveTo @goto: BuildGotoBlock(target, @goto, methodName); return;
                 case GlideTo glide: BuildGlideToBlock(target, glide, methodName); return;
                 case Rotate rotate: BuildRotateBlock(target, rotate, methodName); return;
+                case MoveBySteps steps: BuildMoveStepsBlock(target, steps, methodName); return;
             #endregion
             #region Looks
                 case Say say: BuildSayBlock(target, say, methodName); return;
@@ -275,6 +276,14 @@ internal static class GenScript
         foreach (var @ref in deg.toFree)
             Builder.BuildFree(@ref);
         Builder.BuildCall2(Current.Libs.MotionPointInDirection, [_currentScript.Function.GetParam(0), altered]);
+    }
+
+    private static void BuildMoveStepsBlock(TargetsCode target, MoveBySteps steps, string methodName)
+    {
+        var count = GetFloatArg(methodName, steps.Steps, target);
+        Builder.BuildCall2(Current.Libs.MotionMoveSteps, [_currentScript!.Function.GetParam(0), count.Value]);
+        foreach (var @ref in count.toFree)
+            Builder.BuildFree(@ref);
     }
     #endregion
     

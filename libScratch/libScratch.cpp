@@ -6,6 +6,7 @@
 #include <charconv>
 #include <list>
 #include <iostream>
+#include <numbers>
 #include <ostream>
 #include <random>
 
@@ -44,6 +45,13 @@ void motion_goto_random(Actor& actor)
 {
     actor.set_x(random_int(-240, 240));
     actor.set_y(random_int(-180, 180));
+}
+void motion_move_steps(Actor& actor, const double steps)
+{
+    auto deltaX = std::sin((actor.direction / 180) * std::numbers::pi) * steps;
+    auto deltaY = std::cos((actor.direction / 180) * std::numbers::pi) * steps;
+    actor.set_x(actor.x + deltaX);
+    actor.set_y(actor.y + deltaY);
 }
 
 void motion_begin_glide_to(const Actor& actor, double* args, double desX, double desY, double time)
